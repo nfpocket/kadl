@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .gutter {
+    scrollbar-gutter: stable;
+  }
+
+  .card {
+    @apply hover:!bg-cornflower-blue-500/10 cursor-pointer hover:outline outline-1 hover:outline-cornflower-blue-500 transition-colors flex items-center justify-center;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
