@@ -12,7 +12,7 @@
 
       <div>Day not found</div>
 
-      <UButton icon="i-tabler-arrow-left" label="go back " @click="$router.back()" />
+      <UButton to="/notes" icon="i-tabler-arrow-left" label="go back " />
     </div>
   </UCard>
 </template>

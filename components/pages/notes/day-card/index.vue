@@ -1,29 +1,31 @@
 <template>
   <UCard :ui="{ base: 'flex flex-col', body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' } }">
     <template #header>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-4">
-          <div class="truncate">{{ format(new Date(noteDay.date), "'Notes from:' dd.MM.yyyy") }}</div>
+      <div class="flex items-center justify-between gap-4">
+        <div class="truncate">{{ format(new Date(noteDay.date), "'Notes from:' dd.MM.yyyy") }}</div>
 
-          <UButton icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square @click="$router.back()" />
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <UInput placeholder="Title" variant="seamless" size="xl" class="w-full" v-model="title" @update:model-value="handleUpdateTitle" />
-
-          <DeleteModal
-            v-if="showDeleteModal"
-            :loading="noteDaysApi.loading.value"
-            title="Are you sure you want to delete this day?"
-            description="By deleting this day, all notes and subnotes will be deleted as well."
-            @cancel="showDeleteModal = false"
-            @delete="handleDelete"
-          />
-          <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+        <div class="flex items-center gap-2">
+          <UButton to="/notes" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
+          <div class="flex items-center justify-between gap-2">
+            <DeleteModal
+              v-if="showDeleteModal"
+              :loading="noteDaysApi.loading.value"
+              title="Are you sure you want to delete this day?"
+              description="By deleting this day, all notes and subnotes will be deleted as well."
+              @cancel="showDeleteModal = false"
+              @delete="handleDelete"
+            />
+            <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+          </div>
         </div>
       </div>
     </template>
 
     <div class="flex flex-col gap-6">
+      <div class="px-6">
+        <UInput placeholder="Title" variant="seamless" size="xl" class="w-full" v-model="title" @update:model-value="handleUpdateTitle" />
+      </div>
+
       <label class="flex flex-col gap-2 px-6">
         <span class="text-xs">Description</span>
         <UTextarea

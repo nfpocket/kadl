@@ -2,6 +2,7 @@
   <div
     class="flex items-center group gap-2 hover:bg-gray-500/10 focus-within:!bg-cornflower-blue-500/20 last-of-type:border-b-0 border-b-[1px] border-y-gray-500/25"
     @contextmenu.prevent.stop="onContextMenu"
+    @dblclick="navigateTo(`/notes/note/${note.id}`)"
   >
     <DeleteModal
       v-if="showDeleteModal"

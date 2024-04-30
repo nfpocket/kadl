@@ -1,29 +1,43 @@
 <template>
   <UCard :ui="{ base: 'flex flex-col', body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' } }">
     <template #header>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-4">
-          <UBreadcrumb :links="breadcrumbs" />
-
-          <UButton icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square @click="$router.back()" />
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <UInput placeholder="Title" variant="seamless" size="xl" class="w-full" v-model="title" @update:model-value="handleUpdateTitle" />
-
-          <DeleteModal
-            v-if="showDeleteModal"
-            :loading="notesApi.loading.value"
-            title="Are you sure you want to delete this day?"
-            description="By deleting this day, all notes and subnotes will be deleted as well."
-            @cancel="showDeleteModal = false"
-            @delete="handleDelete"
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <UButton
+            icon="i-tabler-check"
+            size="xs"
+            :label="note.checked ? 'Completed' : 'Mark completed'"
+            :variant="note.checked ? 'soft' : 'outline'"
+            color="green"
+            @click="handleUpdateChecked"
           />
-          <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+
+          <UBreadcrumb :links="breadcrumbs" />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <UButton :to="backRoutePath" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
+
+          <div>
+            <DeleteModal
+              v-if="showDeleteModal"
+              :loading="notesApi.loading.value"
+              title="Are you sure you want to delete this day?"
+              description="By deleting this day, all notes and subnotes will be deleted as well."
+              @cancel="showDeleteModal = false"
+              @delete="handleDelete"
+            />
+            <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+          </div>
         </div>
       </div>
     </template>
 
     <div class="flex flex-col gap-6">
+      <div class="px-6">
+        <UInput placeholder="Title" variant="seamless" size="xl" class="w-full" v-model="title" @update:model-value="handleUpdateTitle" />
+      </div>
+
       <label class="flex flex-col gap-2 px-6">
         <span class="text-xs">Description</span>
         <UTextarea
@@ -65,6 +79,7 @@
 </template>
 
 <script setup lang="ts">
+import { format } from "date-fns";
 import { VueDraggable, type SortableEvent } from "vue-draggable-plus";
 import type { Tables } from "~/types/supabase";
 
@@ -81,6 +96,16 @@ const loadingSubNotes = ref(false);
 
 const title = ref(props.note.title ?? "");
 const description = ref(props.note.description ?? "");
+
+const handleUpdateChecked = async () => {
+  const updatedNote = await notesApi.updateNote(props.note.id, {
+    checked: !props.note.checked,
+  });
+
+  if (!updatedNote) return;
+
+  props.note.checked = updatedNote.checked;
+};
 
 const handleUpdateTitle = throttle(async (value: string) => {
   const updatedNote = await notesApi.updateNote(props.note.id, {
@@ -170,12 +195,34 @@ const loadAllNoteParents = async () => {
     label: parent.title,
     to: `/notes/note/${parent.id}`,
   }));
+
+  if (props.note.day_id !== null) {
+    let dayLabel = "Day";
+
+    const day = await useNoteDaysApi().getNoteDayById(props.note.day_id);
+    if (day) {
+      dayLabel = day.title || `Day ${format(new Date(day.date), "dd.MM.yyyy")}`;
+    }
+
+    breadcrumbs.value.unshift({
+      id: props.note.day_id,
+      label: dayLabel,
+      to: `/notes/day/${props.note.day_id}`,
+    });
+  }
 };
+
+const backRoutePath = computed(() => {
+  if (props.note.parent_note_id) {
+    return `/notes/note/${props.note.parent_note_id}`;
+  }
+
+  return `/notes/day/${props.note.day_id}`;
+});
 
 loadSubNotes();
 loadAllNoteParents();
 
-const router = useRouter();
 const showDeleteModal = ref(false);
 const requestDelete = () => {
   showDeleteModal.value = true;
@@ -184,7 +231,7 @@ const handleDelete = async () => {
   const deleted = await notesApi.deleteNote(props.note.id);
   if (!deleted) return;
 
-  router.back();
+  navigateTo(backRoutePath.value);
   useToasts().success("Note  deleted successfully");
 };
 </script>
