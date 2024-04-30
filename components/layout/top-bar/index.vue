@@ -3,7 +3,7 @@
     <div class="flex items-center gap-1 w-full">
       <NuxtLink to="/" class="font-semibold text-3xl p-2 select-none cursor-pointer">Kadl</NuxtLink>
 
-      <div class="ml-auto flex items-center gap-4">
+      <div class="ml-auto flex items-center gap-4 mr-2">
         <button v-if="user" @click="handleLogout" class="hover:underline">Logout</button>
 
         <ThemeToggle />
