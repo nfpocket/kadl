@@ -11,7 +11,7 @@
       @cancel="showDeleteModal = false"
       @delete="handleDelete"
     />
-    <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 group-hover:opacity-50 cursor-grab" />
+    <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 group-hover:opacity-50 cursor-grab handle" />
     <UCheckbox :model-value="note.checked" @update:model-value="handleUpdateChecked" />
     <UInput
       :class="note.checked ? 'line-through opacity-35' : ''"

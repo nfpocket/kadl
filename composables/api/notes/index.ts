@@ -4,6 +4,10 @@ import type { Database, Tables } from "~/types/supabase";
 type CreatableNoteData = Omit<Tables<"notes">, "id" | "user_id" | "day_id" | "created_at" | "updated_at">;
 type UpdatableNoteData = Omit<Tables<"notes">, "id" | "user_id" | "created_at" | "updated_at">;
 
+type RequestOptions = {
+  silent?: boolean;
+};
+
 export const useNotesApi = () => {
   const client = useSupabaseClient<Database>();
   const user = useSupabaseUser();
@@ -14,7 +18,7 @@ export const useNotesApi = () => {
     if (!user.value) return [];
 
     loading.value = true;
-    const { data, error } = await client.from("notes").select("*").eq("day_id", dayId).order("date", { ascending: true });
+    const { data, error } = await client.from("notes").select("*").eq("day_id", dayId).order("order", { ascending: true });
     loading.value = false;
 
     if (error) {
@@ -31,7 +35,7 @@ export const useNotesApi = () => {
     if (!user.value) return [];
 
     loading.value = true;
-    const { data, error } = await client.from("notes").select("*").eq("parent_note_id", parentId).order("date", { ascending: true });
+    const { data, error } = await client.from("notes").select("*").eq("parent_note_id", parentId).order("order", { ascending: true });
     loading.value = false;
 
     if (error) {
@@ -103,8 +107,18 @@ export const useNotesApi = () => {
     return data;
   };
 
-  const updateNote = async (id: number, noteData: Partial<UpdatableNoteData>) => {
+  const updateNote = async (id: number, noteData: Partial<UpdatableNoteData>, options?: RequestOptions) => {
     if (!user.value) return null;
+
+    if (options?.silent) {
+      const { data, error } = await client.from("notes").update(noteData).eq("id", id);
+      if (error) {
+        console.error(error);
+        return null;
+      }
+
+      return data;
+    }
 
     loading.value = true;
     const { data, error } = await client.from("notes").update(noteData).eq("id", id).select("*").single();
@@ -150,6 +164,23 @@ export const useNotesApi = () => {
 
     return data;
   };
+
+  const updateNotesOrder = async (noteIds: number[], newOrders: number[]) => {
+    if (!user.value) return false;
+
+    // await Promise.all(notesToUpdate.map(async (note, index) => notesApi.updateNote(note.id, { order: correctedFromIndex + index }, { silent: true })));
+
+    const { error } = await client.rpc("update_note_orders", { note_ids: noteIds, new_orders: newOrders });
+
+    if (error) {
+      console.error(error);
+      toasts.error("Failed to update notes order");
+      return false;
+    }
+
+    return true;
+  };
+
   //   const getRealtimeChannel = (channelName: string) => {
   //     return client.channel(channelName);
   //   };
@@ -169,5 +200,7 @@ export const useNotesApi = () => {
     updateNote,
     deleteNote,
     loading: readonly(loading),
+
+    updateNotesOrder,
   };
 };

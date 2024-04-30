@@ -45,13 +45,15 @@
             <NotesDayCardSubNoteSkeleton v-for="i in 5" :key="i" />
           </div>
 
-          <NotesDayCardSubNote
-            v-for="subnote in subnotes"
-            :key="subnote.id"
-            :note="subnote"
-            @deleted="handleRemoveSubnote(subnote)"
-            @add-after="handleAddNewAfter(subnote)"
-          />
+          <VueDraggable v-model="subnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
+            <NotesDayCardSubNote
+              v-for="subnote in subnotes"
+              :key="subnote.id"
+              :note="subnote"
+              @deleted="handleRemoveSubnote(subnote)"
+              @add-after="handleAddNewAfter(subnote)"
+            />
+          </VueDraggable>
         </div>
 
         <div class="px-6">
@@ -63,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+import { VueDraggable, type SortableEvent } from "vue-draggable-plus";
 import type { Tables } from "~/types/supabase";
 
 type BreakdcrumbLink = { id: number; label: string; to: string };
@@ -108,6 +111,7 @@ const handleUpdateDescription = throttle(async (value: string) => {
 const handleAddNote = async () => {
   const newSubnote = await notesApi.createNoteFromNote(props.note.id, {
     date: new Date().toISOString(),
+    order: subnotes.value.length,
   });
   if (!newSubnote) return;
   subnotes.value.push(newSubnote);
@@ -131,6 +135,29 @@ const handleAddNewAfter = async (subnote: Tables<"notes">) => {
   if (!newSubnote) return;
 
   subnotes.value.splice(index + 1, 0, newSubnote);
+
+  const notesToUpdate = subnotes.value.slice(index + 1);
+  const noteIds = notesToUpdate.map((note) => note.id);
+  const noteOrderIndexes = notesToUpdate.map((_note, i) => i + index);
+
+  notesApi.updateNotesOrder(noteIds, noteOrderIndexes);
+};
+
+const handleNotesOrder = async (event: SortableEvent) => {
+  const from = event.oldIndex;
+  const to = event.newIndex;
+
+  if (from === undefined || to === undefined) return;
+
+  const correctedFromIndex = Math.min(from, to);
+  const correctedToIndex = Math.max(from, to) + 1;
+
+  const notesToUpdate = subnotes.value.slice(correctedFromIndex, correctedToIndex);
+
+  const noteIds = notesToUpdate.map((note) => note.id);
+  const noteOrders = notesToUpdate.map((_note, index) => correctedFromIndex + index);
+
+  notesApi.updateNotesOrder(noteIds, noteOrders);
 };
 
 const breadcrumbs = ref<BreakdcrumbLink[]>([]);

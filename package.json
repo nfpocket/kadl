@@ -22,6 +22,7 @@
     "nuxt": "^3.11.1",
     "v-calendar": "^3.1.2",
     "vue": "^3.4.21",
+    "vue-draggable-plus": "^0.4.0",
     "vue-router": "^4.3.0",
     "zod": "^3.23.4"
   },

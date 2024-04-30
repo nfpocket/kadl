@@ -55,6 +55,7 @@ export type Database = {
           day_id: number | null
           description: string | null
           id: number
+          order: number | null
           parent_note_id: number | null
           title: string | null
           user_id: string
@@ -66,6 +67,7 @@ export type Database = {
           day_id?: number | null
           description?: string | null
           id?: number
+          order?: number | null
           parent_note_id?: number | null
           title?: string | null
           user_id: string
@@ -77,6 +79,7 @@ export type Database = {
           day_id?: number | null
           description?: string | null
           id?: number
+          order?: number | null
           parent_note_id?: number | null
           title?: string | null
           user_id?: string
@@ -119,6 +122,13 @@ export type Database = {
           parent_note_id: number
           title: string
         }[]
+      }
+      update_note_orders: {
+        Args: {
+          note_ids: number[]
+          new_orders: number[]
+        }
+        Returns: undefined
       }
     }
     Enums: {
