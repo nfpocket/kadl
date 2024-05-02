@@ -71,6 +71,7 @@
             <NotesNoteCardSubNoteSkeleton v-for="i in 5" :key="i" />
           </div>
 
+          <!-- TODO: User new filterOptions in userSettings -->
           <VueDraggable v-model="visibleSubnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
             <NotesNoteCardSubNote
               v-for="subnote in visibleSubnotes"
