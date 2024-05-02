@@ -23,7 +23,15 @@
 
     <div class="flex flex-col gap-6">
       <div class="px-6">
-        <UInput placeholder="Title" variant="seamless" size="xl" class="w-full" v-model="title" @update:model-value="handleUpdateTitle" />
+        <UInput
+          placeholder="Title"
+          variant="seamless"
+          size="xl"
+          class="w-full"
+          input-class="text-3xl"
+          v-model="title"
+          @update:model-value="handleUpdateTitle"
+        />
       </div>
 
       <label class="flex flex-col gap-2 px-6">
