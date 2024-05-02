@@ -25,7 +25,12 @@
       @keydown.enter="handleEnter"
     />
 
-    <UButton :to="`/notes/note/${note.id}`" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+    <div class="flex items-center">
+      <UDropdown :items="[priorityOptions.map((option) => ({ ...option, click: () => handleUpdatePriority(option) }))]" :popper="{ arrow: true }">
+        <UButton icon="i-tabler-exclamation-mark" :class="getPriorityIconClass(note.priority)" size="sm" color="gray" variant="ghost" square />
+      </UDropdown>
+      <UButton :to="`/notes/note/${note.id}`" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+    </div>
   </div>
 </template>
 
@@ -47,6 +52,11 @@ const handleUpdateTitle = throttle((title: string) => {
 
 const handleUpdateChecked = (checked: boolean) => {
   notesApi.updateNote(props.note.id, { checked });
+};
+
+const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {
+  notesApi.updateNote(props.note.id, { priority: option.value });
+  props.note.priority = option.value;
 };
 
 const handleEnter = () => {

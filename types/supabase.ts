@@ -57,6 +57,7 @@ export type Database = {
           id: number
           order: number | null
           parent_note_id: number | null
+          priority: Database["public"]["Enums"]["priority"]
           title: string | null
           user_id: string
         }
@@ -69,6 +70,7 @@ export type Database = {
           id?: number
           order?: number | null
           parent_note_id?: number | null
+          priority?: Database["public"]["Enums"]["priority"]
           title?: string | null
           user_id: string
         }
@@ -81,6 +83,7 @@ export type Database = {
           id?: number
           order?: number | null
           parent_note_id?: number | null
+          priority?: Database["public"]["Enums"]["priority"]
           title?: string | null
           user_id?: string
         }
@@ -132,7 +135,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      priority: "none" | "low" | "middle" | "high" | "above all"
     }
     CompositeTypes: {
       [_ in never]: never
