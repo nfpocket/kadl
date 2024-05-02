@@ -6,6 +6,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   if (to.name === "index" && user.value) {
-    return navigateTo("/notes");
+    return navigateTo("/projects");
   }
 });

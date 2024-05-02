@@ -9,11 +9,11 @@ export const useNoteDaysApi = () => {
   const toasts = useToasts();
   const loading = ref(false);
 
-  const getNoteDays = async () => {
+  const getNoteDaysByProjectId = async <T = Tables<"note_days">>(projectId: number, selectQuery = "*") => {
     if (!user.value) return [];
 
     loading.value = true;
-    const { data, error } = await client.from("note_days").select("*").order("date", { ascending: true });
+    const { data, error } = await client.from("note_days").select(selectQuery).eq("project_id", projectId).order("date", { ascending: true });
     loading.value = false;
 
     if (error) {
@@ -23,14 +23,18 @@ export const useNoteDaysApi = () => {
       return [];
     }
 
-    return data;
+    return data as T[];
   };
 
-  const getNoteDayById = async (id: number) => {
+  const getClient = () => {
+    return client.from("note_days");
+  };
+
+  const getNoteDayById = async <T = Tables<"note_days">>(id: number, selectQuery = "*") => {
     if (!user.value) return null;
 
     loading.value = true;
-    const { data, error } = await client.from("note_days").select("*").eq("id", id).single();
+    const { data, error } = await client.from("note_days").select(selectQuery).eq("id", id).single<T>();
     loading.value = false;
 
     if (error || !data) {
@@ -43,7 +47,7 @@ export const useNoteDaysApi = () => {
     return data;
   };
 
-  const createNoteDay = async (noteData: Partial<CreatableNoteData> & { date: string }) => {
+  const createNoteDay = async (noteData: Partial<CreatableNoteData> & { date: string; project_id: number }) => {
     if (!user.value) return null;
 
     loading.value = true;
@@ -99,7 +103,8 @@ export const useNoteDaysApi = () => {
   };
 
   return {
-    getNoteDays,
+    getClient,
+    getNoteDaysByProjectId,
     getNoteDayById,
     createNoteDay,
     updateNoteDay,

@@ -2,10 +2,13 @@
   <UCard :ui="{ base: 'flex flex-col', body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' } }">
     <template #header>
       <div class="flex items-center justify-between gap-4">
-        <div class="truncate">{{ format(new Date(noteDay.date), "'Notes from:' dd.MM.yyyy") }}</div>
+        <div class="flex items-center gap-2">
+          <div class="truncate">{{ format(new Date(noteDay.date), "'Notes from:' dd.MM.yyyy") }}</div>
+          <UBreadcrumb :links="breadcrumbs" />
+        </div>
 
         <div class="flex items-center gap-2">
-          <UButton to="/notes" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
+          <UButton :to="`/projects/${props.noteDay.project_id}`" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
           <div class="flex items-center justify-between gap-2">
             <DeleteModal
               v-if="showDeleteModal"
@@ -77,10 +80,13 @@
 <script setup lang="ts">
 import { format } from "date-fns";
 import { VueDraggable, type SortableEvent } from "vue-draggable-plus";
+import type { NoteDayWithProject } from "~/pages/projects/[project_id]/[day_id]/index.vue";
 import type { Tables } from "~/types/supabase";
 
+type BreakdcrumbLink = { id: number; label: string; to: string; icon?: string };
+
 const props = defineProps<{
-  noteDay: Tables<"note_days">;
+  noteDay: NoteDayWithProject;
 }>();
 
 const noteDaysApi = useNoteDaysApi();
@@ -102,7 +108,7 @@ const { META_BACKSPACE, CTRL_BACKSPACE } = useMagicKeys({
 whenever(
   () => META_BACKSPACE.value || CTRL_BACKSPACE.value,
   () => {
-    navigateTo("/notes");
+    navigateTo(`/projects/${props.noteDay.project_id}`);
   }
 );
 
@@ -184,7 +190,27 @@ const handleNotesOrder = async (event: SortableEvent) => {
   notesApi.updateNotesOrder(noteIds, noteOrders);
 };
 
+const breadcrumbs = ref<BreakdcrumbLink[]>([]);
+const loadBreadcrumbs = async () => {
+  breadcrumbs.value.unshift({
+    id: props.noteDay.id,
+    label: props.noteDay.title || `Day ${format(new Date(props.noteDay.date), "dd MMMM yyyy")}`,
+    to: `/projects/${props.noteDay.project_id}/${props.noteDay.id}`,
+    icon: "i-tabler-calendar",
+  });
+
+  if (!props.noteDay.projects) return;
+
+  breadcrumbs.value.unshift({
+    id: props.noteDay.projects.id,
+    label: props.noteDay.projects.title || `Project ${props.noteDay.projects.id}`,
+    to: `/projects/${props.noteDay.projects.id}`,
+    icon: "i-tabler-stack",
+  });
+};
+
 loadSubNotes();
+loadBreadcrumbs();
 
 const showDeleteModal = ref(false);
 const requestDelete = () => {
@@ -194,7 +220,7 @@ const handleDelete = async () => {
   const deleted = await noteDaysApi.deleteNoteDay(props.noteDay.id);
   if (!deleted) return;
 
-  navigateTo("/notes");
+  navigateTo(`/projects/${props.noteDay.project_id}`);
   useToasts().success("Note day deleted successfully");
 };
 </script>

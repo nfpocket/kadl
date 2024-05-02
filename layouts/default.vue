@@ -17,7 +17,7 @@ watch(
       return navigateTo("/auth/login");
     }
 
-    navigateTo("/notes");
+    navigateTo("/projects");
   },
   { deep: true }
 );

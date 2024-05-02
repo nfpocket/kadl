@@ -16,6 +16,7 @@ export type Database = {
           date: string
           description: string | null
           id: number
+          project_id: number
           title: string | null
           user_id: string | null
         }
@@ -25,6 +26,7 @@ export type Database = {
           date: string
           description?: string | null
           id?: number
+          project_id: number
           title?: string | null
           user_id?: string | null
         }
@@ -34,10 +36,18 @@ export type Database = {
           date?: string
           description?: string | null
           id?: number
+          project_id?: number
           title?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "note_days_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "note_days_user_id_fkey"
             columns: ["user_id"]
@@ -111,6 +121,44 @@ export type Database = {
           },
         ]
       }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          order: number
+          tags: string[] | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          order?: number
+          tags?: string[] | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          order?: number
+          tags?: string[] | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -124,6 +172,7 @@ export type Database = {
           id: number
           parent_note_id: number
           title: string
+          day_id: number
         }[]
       }
       update_note_orders: {

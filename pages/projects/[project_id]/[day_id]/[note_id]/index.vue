@@ -12,7 +12,7 @@
 
       <div>Day not found</div>
 
-      <UButton to="/notes" icon="i-tabler-arrow-left" label="go back " />
+      <UButton to="/projects" icon="i-tabler-arrow-left" label="back to projects" />
     </div>
   </UCard>
 </template>
@@ -20,14 +20,15 @@
 <script setup lang="ts">
 import type { Tables } from "~/types/supabase";
 
-const route = useRoute();
-const noteId = computed(() => Number(route.params.id));
+const { noteId } = useParams();
 
 const notesApi = useNotesApi();
 
 const note = ref<Tables<"notes"> | null>(null);
 
 const loadNoteDay = async () => {
+  if (noteId.value === null) return;
+
   note.value = await notesApi.getNoteById(noteId.value);
 };
 

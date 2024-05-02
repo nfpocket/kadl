@@ -2,7 +2,7 @@
   <div
     class="flex items-center group gap-2 hover:bg-gray-500/10 focus-within:!bg-cornflower-blue-500/20 last-of-type:border-b-0 border-b-[1px] border-y-gray-500/25"
     @contextmenu.prevent.stop="onContextMenu"
-    @dblclick="navigateTo(`/notes/note/${note.id}`)"
+    @dblclick="navigateTo(getNextItemRoute(note.id))"
   >
     <DeleteModal
       v-if="showDeleteModal"
@@ -30,7 +30,7 @@
       <UDropdown :items="[priorityOptions.map((option) => ({ ...option, click: () => handleUpdatePriority(option) }))]" :popper="{ arrow: true }">
         <UButton icon="i-tabler-exclamation-mark" :class="getPriorityIconClass(note.priority)" size="sm" color="gray" variant="ghost" square />
       </UDropdown>
-      <UButton :to="`/notes/note/${note.id}`" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+      <UButton :to="getNextItemRoute(note.id)" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
     </div>
   </div>
 </template>
@@ -44,6 +44,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void }>();
+
+const { projectId, dayId } = useParams();
+const getNextItemRoute = (noteId: number) => {
+  if (projectId.value === null || dayId.value === null) return "/projects";
+
+  return `/projects/${projectId.value}/${dayId.value}/${noteId}`;
+};
 
 const notesApi = useNotesApi();
 
@@ -142,7 +149,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 
   if (event.metaKey || event.ctrlKey) {
-    navigateTo(`/notes/note/${props.note.id}`);
+    navigateTo(getNextItemRoute(props.note.id));
     return;
   }
 
@@ -157,7 +164,7 @@ const onContextMenu = (event: MouseEvent) => {
       type: "link",
       label: "View",
       icon: "i-tabler-eye",
-      to: `/notes/note/${props.note.id}`,
+      to: getNextItemRoute(props.note.id),
     },
     {
       type: "divider",

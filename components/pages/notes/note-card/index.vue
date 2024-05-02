@@ -87,15 +87,23 @@
 </template>
 
 <script setup lang="ts">
+import type { QueryData } from "@supabase/supabase-js";
 import { format } from "date-fns";
 import { VueDraggable, type SortableEvent } from "vue-draggable-plus";
 import type { Tables } from "~/types/supabase";
 
-type BreakdcrumbLink = { id: number; label: string; to: string };
+type BreakdcrumbLink = { id: number; label: string; to: string; icon?: string };
 
 const props = defineProps<{
   note: Tables<"notes">;
 }>();
+
+const { projectId, dayId } = useParams();
+const getNextItemRoute = (noteId: number) => {
+  if (projectId.value === null || dayId.value === null) return "/projects";
+
+  return `/projects/${projectId.value}/${dayId.value}/${noteId}`;
+};
 
 const notesApi = useNotesApi();
 
@@ -107,10 +115,10 @@ const description = ref(props.note.description ?? "");
 
 const backRoutePath = computed(() => {
   if (props.note.parent_note_id) {
-    return `/notes/note/${props.note.parent_note_id}`;
+    return `/projects/${projectId.value}/${dayId.value}/${props.note.parent_note_id}`;
   }
 
-  return `/notes/day/${props.note.day_id}`;
+  return `/projects/${projectId.value}/${dayId.value}`;
 });
 
 const { META_BACKSPACE, CTRL_BACKSPACE } = useMagicKeys({
@@ -216,34 +224,49 @@ const handleNotesOrder = async (event: SortableEvent) => {
 };
 
 const breadcrumbs = ref<BreakdcrumbLink[]>([]);
-const loadAllNoteParents = async () => {
+const loadBreadcrumbs = async () => {
   const parents = await notesApi.loadAllNoteParents(props.note.id);
   if (!parents) return;
+
+  const dayParent = parents.find((parent) => parent.day_id !== null);
+
+  if (!dayParent) return;
+
+  const client = useNoteDaysApi().getClient();
+  const rawQuery = "id, title, date, projects (id, title)";
+  const query = client.select(rawQuery);
+
+  type NoteDayWithProject = QueryData<typeof query>[number];
+
+  const day = await useNoteDaysApi().getNoteDayById<NoteDayWithProject>(dayParent.day_id, rawQuery);
+  const project = day?.projects;
+
+  if (!day || !project) return;
 
   breadcrumbs.value = parents.reverse().map((parent) => ({
     id: parent.id,
     label: parent.title,
-    to: `/notes/note/${parent.id}`,
+    to: `/projects/${project.id}/${day.id}/${parent.id}`,
+    icon: "i-tabler-note",
   }));
 
-  if (props.note.day_id !== null) {
-    let dayLabel = "Day";
+  breadcrumbs.value.unshift({
+    id: day.id,
+    label: day.title || `Day ${format(new Date(day.date), "dd MMMM yyyy")}`,
+    to: `/projects/${project.id}/${day.id}`,
+    icon: "i-tabler-calendar",
+  });
 
-    const day = await useNoteDaysApi().getNoteDayById(props.note.day_id);
-    if (day) {
-      dayLabel = day.title || `Day ${format(new Date(day.date), "dd.MM.yyyy")}`;
-    }
-
-    breadcrumbs.value.unshift({
-      id: props.note.day_id,
-      label: dayLabel,
-      to: `/notes/day/${props.note.day_id}`,
-    });
-  }
+  breadcrumbs.value.unshift({
+    id: project.id,
+    label: project.title || `Project ${project.id}`,
+    to: `/projects/${project.id}`,
+    icon: "i-tabler-stack",
+  });
 };
 
 loadSubNotes();
-loadAllNoteParents();
+loadBreadcrumbs();
 
 const showDeleteModal = ref(false);
 const requestDelete = () => {
