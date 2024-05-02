@@ -14,7 +14,11 @@
       <NuxtLink v-for="project in projects" :key="project.id" :to="`/projects/${project.id}`" @contextmenu.stop.prevent="handleContextMenu($event, project)">
         <UCard class="card">
           <div class="flex flex-col gap-2">
-            <UInput
+            <div>
+              <span v-if="project.title" class="text-xl">{{ project.title }}</span>
+              <span v-else class="text-xl italic">Title</span>
+            </div>
+            <!-- <UInput
               placeholder="Title"
               variant="seamless"
               size="xl"
@@ -24,7 +28,7 @@
               @update:model-value="handleUpdateTitle($event, project)"
               @click.stop.prevent
               @keydown.enter="navigateTo(`/projects/${project.id}`)"
-            />
+            /> -->
           </div>
         </UCard>
       </NuxtLink>

@@ -18,7 +18,7 @@
       :class="note.completed ? 'line-through opacity-35' : ''"
       placeholder="Title"
       variant="none"
-      autofocus
+      :autofocus="false"
       class="w-full"
       input-class="subnote"
       :model-value="note.title || ''"

@@ -17,8 +17,17 @@ watch(
       return navigateTo("/auth/login");
     }
 
+    useUserSettings().init();
     navigateTo("/projects");
   },
   { deep: true }
 );
+
+onMounted(() => {
+  if (!user.value) {
+    return;
+  }
+
+  useUserSettings().init();
+});
 </script>

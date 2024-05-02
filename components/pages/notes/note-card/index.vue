@@ -60,16 +60,20 @@
       </label>
 
       <div class="flex flex-col gap-4">
-        <span class="text-xs px-6">Subnotes</span>
+        <div class="flex items-center justify-between">
+          <span class="text-xs px-6">Subnotes</span>
+
+          <NotesNoteCardSubNoteFilterPopover v-model="userSettings.filterOptions" />
+        </div>
 
         <div class="flex flex-col">
           <div v-if="loadingSubNotes && !subnotes.length">
-            <NotesSubNoteSkeleton v-for="i in 5" :key="i" />
+            <NotesNoteCardSubNoteSkeleton v-for="i in 5" :key="i" />
           </div>
 
-          <VueDraggable v-model="subnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
-            <NotesSubNote
-              v-for="subnote in subnotes"
+          <VueDraggable v-model="visibleSubnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
+            <NotesNoteCardSubNote
+              v-for="subnote in visibleSubnotes"
               :key="subnote.id"
               :note="subnote"
               @deleted="handleRemoveSubnote(subnote)"
@@ -99,10 +103,19 @@ const props = defineProps<{
 
 const { projectId } = useParams();
 
+const { userSettings } = useUserSettings();
+
 const notesApi = useNotesApi();
 
 const subnotes = ref<Tables<"notes">[]>([]);
 const loadingSubNotes = ref(false);
+
+const visibleSubnotes = computed(() => {
+  return subnotes.value.filter((note) => {
+    if (userSettings.value.filterOptions.hideCompleted && note.completed) return false;
+    return true;
+  });
+});
 
 const title = ref(props.note.title ?? "");
 const description = ref(props.note.description ?? "");
