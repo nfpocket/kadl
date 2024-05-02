@@ -105,6 +105,28 @@ const loadingSubNotes = ref(false);
 const title = ref(props.note.title ?? "");
 const description = ref(props.note.description ?? "");
 
+const backRoutePath = computed(() => {
+  if (props.note.parent_note_id) {
+    return `/notes/note/${props.note.parent_note_id}`;
+  }
+
+  return `/notes/day/${props.note.day_id}`;
+});
+
+const { META_BACKSPACE, CTRL_BACKSPACE } = useMagicKeys({
+  passive: false,
+  onEventFired(e) {
+    if (!(META_BACKSPACE.value || CTRL_BACKSPACE.value)) return;
+    e.preventDefault();
+  },
+});
+whenever(
+  () => META_BACKSPACE.value || CTRL_BACKSPACE.value,
+  () => {
+    navigateTo(backRoutePath.value);
+  }
+);
+
 const handleUpdateChecked = async () => {
   const updatedNote = await notesApi.updateNote(props.note.id, {
     checked: !props.note.checked,
@@ -219,14 +241,6 @@ const loadAllNoteParents = async () => {
     });
   }
 };
-
-const backRoutePath = computed(() => {
-  if (props.note.parent_note_id) {
-    return `/notes/note/${props.note.parent_note_id}`;
-  }
-
-  return `/notes/day/${props.note.day_id}`;
-});
 
 loadSubNotes();
 loadAllNoteParents();

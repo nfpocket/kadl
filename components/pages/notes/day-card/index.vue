@@ -92,6 +92,20 @@ const loadingSubNotes = ref(false);
 const title = ref(props.noteDay.title ?? "");
 const description = ref(props.noteDay.description ?? "");
 
+const { META_BACKSPACE, CTRL_BACKSPACE } = useMagicKeys({
+  passive: false,
+  onEventFired(e) {
+    if (!(META_BACKSPACE.value || CTRL_BACKSPACE.value)) return;
+    e.preventDefault();
+  },
+});
+whenever(
+  () => META_BACKSPACE.value || CTRL_BACKSPACE.value,
+  () => {
+    navigateTo("/notes");
+  }
+);
+
 const handleUpdateTitle = throttle(async (value: string) => {
   const updatedNote = await noteDaysApi.updateNoteDay(props.noteDay.id, {
     title: value,
@@ -172,7 +186,6 @@ const handleNotesOrder = async (event: SortableEvent) => {
 
 loadSubNotes();
 
-const router = useRouter();
 const showDeleteModal = ref(false);
 const requestDelete = () => {
   showDeleteModal.value = true;
@@ -181,7 +194,7 @@ const handleDelete = async () => {
   const deleted = await noteDaysApi.deleteNoteDay(props.noteDay.id);
   if (!deleted) return;
 
-  router.push("/notes");
+  navigateTo("/notes");
   useToasts().success("Note day deleted successfully");
 };
 </script>

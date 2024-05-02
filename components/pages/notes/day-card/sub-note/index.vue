@@ -20,9 +20,10 @@
       variant="none"
       autofocus
       class="w-full"
+      input-class="subnote"
       :model-value="note.title || ''"
       @update:model-value="handleUpdateTitle"
-      @keydown.enter="handleEnter"
+      @keydown="handleKeydown"
     />
 
     <div class="flex items-center">
@@ -61,6 +62,91 @@ const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {
 
 const handleEnter = () => {
   emit("addAfter");
+};
+
+const getAllSubnoteElements = () => Array.from(document.getElementsByClassName("subnote")) as HTMLInputElement[];
+const getSubnoteIndex = (subnote: HTMLInputElement) => getAllSubnoteElements().indexOf(subnote);
+
+const getNextSubnote = (currentInput: HTMLInputElement) => {
+  const subnoteElements = getAllSubnoteElements();
+  const currentIndex = getSubnoteIndex(currentInput);
+  if (currentIndex === -1 || currentIndex === subnoteElements.length - 1) {
+    return null;
+  }
+
+  return subnoteElements[currentIndex + 1];
+};
+
+const getPreviousSubnote = (currentInput: HTMLInputElement) => {
+  const subnoteElements = getAllSubnoteElements();
+  const currentIndex = getSubnoteIndex(currentInput);
+  if (currentIndex === -1 || currentIndex === 0) {
+    return null;
+  }
+
+  return subnoteElements[currentIndex - 1];
+};
+
+const handleKeyboardUpDown = (event: KeyboardEvent) => {
+  if (event.key === "ArrowDown") {
+    const nextSubnote = getNextSubnote(event.target as HTMLInputElement);
+    if (nextSubnote) {
+      nextSubnote.focus();
+      event.preventDefault();
+    }
+
+    return true;
+  }
+
+  if (event.key === "ArrowUp") {
+    const previousSubnote = getPreviousSubnote(event.target as HTMLInputElement);
+    if (previousSubnote) {
+      previousSubnote.focus();
+      event.preventDefault();
+    }
+
+    return true;
+  }
+
+  return false;
+};
+
+const handleKeyboardDelete = (event: KeyboardEvent) => {
+  const meta = event.metaKey || event.ctrlKey;
+
+  if (!meta) return false;
+  if (!event.shiftKey) return false;
+  if (event.key !== "Backspace") {
+    return false;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  requestDelete();
+
+  return true;
+};
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (handleKeyboardUpDown(event)) {
+    return;
+  }
+
+  if (handleKeyboardDelete(event)) {
+    return;
+  }
+
+  if (event.key !== "Enter") {
+    return;
+  }
+
+  if (event.metaKey || event.ctrlKey) {
+    navigateTo(`/notes/note/${props.note.id}`);
+    return;
+  }
+
+  handleEnter();
 };
 
 const contextMenu = useContextMenu();

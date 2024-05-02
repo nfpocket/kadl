@@ -14,10 +14,17 @@
         <UCard class="card">
           <div class="flex flex-col gap-2">
             <div class="text-sm">{{ format(new Date(noteDay.date), "dd.MM.yyyy") }}</div>
-            <div class="text-xl">
-              <span v-if="noteDay.title">{{ noteDay.title }}</span>
-              <span v-else class="italic opacity-75">Title</span>
-            </div>
+            <UInput
+              placeholder="Title"
+              variant="seamless"
+              size="xl"
+              class="w-full"
+              input-class="text-xl"
+              :model-value="noteDay.title || ''"
+              @update:model-value="handleUpdateTitle($event, noteDay)"
+              @click.stop.prevent
+              @keydown.enter="navigateTo(`/notes/day/${noteDay.id}`)"
+            />
           </div>
         </UCard>
       </NuxtLink>
@@ -62,8 +69,14 @@ const handleCreateNewNote = async (insertAt: AddPanelsNote) => {
 
   toasts.success("Note day created successfully");
 
-  useRouter().push(`/notes/day/${newNoteDay.id}`);
+  navigateTo(`/notes/day/${newNoteDay.id}`);
 };
+
+const handleUpdateTitle = throttle(async (value: string, noteDay: Tables<"note_days">) => {
+  noteDaysApi.updateNoteDay(noteDay.id, {
+    title: value,
+  });
+});
 
 const requestedNoteDayToDelete = ref<Tables<"note_days"> | null>(null);
 const requestDelete = (noteDay: Tables<"note_days">) => {
