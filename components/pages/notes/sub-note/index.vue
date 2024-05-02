@@ -7,15 +7,15 @@
     <DeleteModal
       v-if="showDeleteModal"
       :loading="notesApi.loading.value"
-      title="Are you sure you want to delete this day?"
-      description="By deleting this day, all notes and subnotes will be deleted as well."
+      title="Are you sure you want to delete this note?"
+      description="By deleting this note, all connected notes and subnotes will be deleted as well."
       @cancel="showDeleteModal = false"
       @delete="handleDelete"
     />
     <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 group-hover:opacity-50 cursor-grab handle" />
-    <UCheckbox :model-value="note.checked" @update:model-value="handleUpdateChecked" />
+    <UCheckbox :model-value="note.completed" @update:model-value="handleUpdateCompleted" />
     <UInput
-      :class="note.checked ? 'line-through opacity-35' : ''"
+      :class="note.completed ? 'line-through opacity-35' : ''"
       placeholder="Title"
       variant="none"
       autofocus
@@ -45,11 +45,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void }>();
 
-const { projectId, dayId } = useParams();
+const { projectId } = useParams();
 const getNextItemRoute = (noteId: number) => {
-  if (projectId.value === null || dayId.value === null) return "/projects";
+  if (projectId.value === null) return "/projects";
 
-  return `/projects/${projectId.value}/${dayId.value}/${noteId}`;
+  return `/projects/${projectId.value}/${noteId}`;
 };
 
 const notesApi = useNotesApi();
@@ -58,8 +58,15 @@ const handleUpdateTitle = throttle((title: string) => {
   notesApi.updateNote(props.note.id, { title });
 });
 
-const handleUpdateChecked = (checked: boolean) => {
-  notesApi.updateNote(props.note.id, { checked });
+const handleUpdateCompleted = async (completed: boolean) => {
+  const prevCompleted = props.note.completed;
+  props.note.completed = completed;
+
+  const updatedNote = await notesApi.updateNote(props.note.id, { completed });
+
+  if (!updatedNote) {
+    props.note.completed = prevCompleted;
+  }
 };
 
 const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {

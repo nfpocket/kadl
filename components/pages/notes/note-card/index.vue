@@ -6,8 +6,8 @@
           <UButton
             icon="i-tabler-check"
             size="xs"
-            :label="note.checked ? 'Completed' : 'Mark completed'"
-            :variant="note.checked ? 'soft' : 'outline'"
+            :label="note.completed ? 'Completed' : 'Mark completed'"
+            :variant="note.completed ? 'soft' : 'outline'"
             color="green"
             @click="handleUpdateChecked"
           />
@@ -22,8 +22,8 @@
             <DeleteModal
               v-if="showDeleteModal"
               :loading="notesApi.loading.value"
-              title="Are you sure you want to delete this day?"
-              description="By deleting this day, all notes and subnotes will be deleted as well."
+              title="Are you sure you want to delete this note?"
+              description="By deleting this note, all connected notes and subnotes will be deleted as well."
               @cancel="showDeleteModal = false"
               @delete="handleDelete"
             />
@@ -64,11 +64,11 @@
 
         <div class="flex flex-col">
           <div v-if="loadingSubNotes && !subnotes.length">
-            <NotesDayCardSubNoteSkeleton v-for="i in 5" :key="i" />
+            <NotesSubNoteSkeleton v-for="i in 5" :key="i" />
           </div>
 
           <VueDraggable v-model="subnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
-            <NotesDayCardSubNote
+            <NotesSubNote
               v-for="subnote in subnotes"
               :key="subnote.id"
               :note="subnote"
@@ -88,7 +88,6 @@
 
 <script setup lang="ts">
 import type { QueryData } from "@supabase/supabase-js";
-import { format } from "date-fns";
 import { VueDraggable, type SortableEvent } from "vue-draggable-plus";
 import type { Tables } from "~/types/supabase";
 
@@ -98,12 +97,7 @@ const props = defineProps<{
   note: Tables<"notes">;
 }>();
 
-const { projectId, dayId } = useParams();
-const getNextItemRoute = (noteId: number) => {
-  if (projectId.value === null || dayId.value === null) return "/projects";
-
-  return `/projects/${projectId.value}/${dayId.value}/${noteId}`;
-};
+const { projectId } = useParams();
 
 const notesApi = useNotesApi();
 
@@ -115,10 +109,10 @@ const description = ref(props.note.description ?? "");
 
 const backRoutePath = computed(() => {
   if (props.note.parent_note_id) {
-    return `/projects/${projectId.value}/${dayId.value}/${props.note.parent_note_id}`;
+    return `/projects/${projectId.value}/${props.note.parent_note_id}`;
   }
 
-  return `/projects/${projectId.value}/${dayId.value}`;
+  return `/projects/${projectId.value}`;
 });
 
 const { META_BACKSPACE, CTRL_BACKSPACE } = useMagicKeys({
@@ -137,12 +131,12 @@ whenever(
 
 const handleUpdateChecked = async () => {
   const updatedNote = await notesApi.updateNote(props.note.id, {
-    checked: !props.note.checked,
+    completed: !props.note.completed,
   });
 
   if (!updatedNote) return;
 
-  props.note.checked = updatedNote.checked;
+  props.note.completed = updatedNote.completed;
 };
 
 const handleUpdateTitle = throttle(async (value: string) => {
@@ -173,7 +167,6 @@ const handleUpdateDescription = throttle(async (value: string) => {
 
 const handleAddNote = async () => {
   const newSubnote = await notesApi.createNoteFromNote(props.note.id, {
-    date: new Date().toISOString(),
     order: subnotes.value.length,
   });
   if (!newSubnote) return;
@@ -192,9 +185,7 @@ const handleRemoveSubnote = (subnote: Tables<"notes">) => {
 
 const handleAddNewAfter = async (subnote: Tables<"notes">) => {
   const index = subnotes.value.findIndex((note) => note.id === subnote.id);
-  const newSubnote = await notesApi.createNoteFromNote(props.note.id, {
-    date: new Date().toISOString(),
-  });
+  const newSubnote = await notesApi.createNoteFromNote(props.note.id);
   if (!newSubnote) return;
 
   subnotes.value.splice(index + 1, 0, newSubnote);
@@ -228,34 +219,27 @@ const loadBreadcrumbs = async () => {
   const parents = await notesApi.loadAllNoteParents(props.note.id);
   if (!parents) return;
 
-  const dayParent = parents.find((parent) => parent.day_id !== null);
+  const projectParent = parents.find((parent) => parent.project_id !== null);
 
-  if (!dayParent) return;
+  if (!projectParent) return;
 
-  const client = useNoteDaysApi().getClient();
-  const rawQuery = "id, title, date, projects (id, title)";
+  const client = useNotesApi().getClient();
+  const rawQuery = "id, title, projects (id, title)";
   const query = client.select(rawQuery);
 
-  type NoteDayWithProject = QueryData<typeof query>[number];
+  type NoteWithProject = QueryData<typeof query>[number];
 
-  const day = await useNoteDaysApi().getNoteDayById<NoteDayWithProject>(dayParent.day_id, rawQuery);
-  const project = day?.projects;
+  const note = await useNotesApi().getNoteById<NoteWithProject>(projectParent.id, rawQuery);
+  const project = note?.projects;
 
-  if (!day || !project) return;
+  if (!project) return;
 
   breadcrumbs.value = parents.reverse().map((parent) => ({
     id: parent.id,
     label: parent.title,
-    to: `/projects/${project.id}/${day.id}/${parent.id}`,
+    to: `/projects/${project.id}/${parent.id}`,
     icon: "i-tabler-note",
   }));
-
-  breadcrumbs.value.unshift({
-    id: day.id,
-    label: day.title || `Day ${format(new Date(day.date), "dd MMMM yyyy")}`,
-    to: `/projects/${project.id}/${day.id}`,
-    icon: "i-tabler-calendar",
-  });
 
   breadcrumbs.value.unshift({
     id: project.id,

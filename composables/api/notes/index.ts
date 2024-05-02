@@ -1,7 +1,7 @@
 import type { Database, Tables } from "~/types/supabase";
 // import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
-type CreatableNoteData = Omit<Tables<"notes">, "id" | "user_id" | "day_id" | "created_at" | "updated_at">;
+type CreatableNoteData = Omit<Tables<"notes">, "id" | "user_id" | "created_at" | "updated_at">;
 type UpdatableNoteData = Omit<Tables<"notes">, "id" | "user_id" | "created_at" | "updated_at">;
 
 type RequestOptions = {
@@ -14,11 +14,13 @@ export const useNotesApi = () => {
   const toasts = useToasts();
   const loading = ref(false);
 
-  const getNotesOfDay = async (dayId: number) => {
+  const getClient = () => client.from("notes");
+
+  const getNotesOfProject = async (projectId: number) => {
     if (!user.value) return [];
 
     loading.value = true;
-    const { data, error } = await client.from("notes").select("*").eq("day_id", dayId).order("order", { ascending: true });
+    const { data, error } = await client.from("notes").select("*").eq("project_id", projectId).order("order", { ascending: true });
     loading.value = false;
 
     if (error) {
@@ -31,11 +33,11 @@ export const useNotesApi = () => {
     return data;
   };
 
-  const getNotesOfParent = async (parentId: number) => {
+  const getNotesOfParent = async <T = Tables<"notes">>(parentId: number, selectQuery = "*") => {
     if (!user.value) return [];
 
     loading.value = true;
-    const { data, error } = await client.from("notes").select("*").eq("parent_note_id", parentId).order("order", { ascending: true });
+    const { data, error } = await client.from("notes").select(selectQuery).eq("parent_note_id", parentId).order("order", { ascending: true });
     loading.value = false;
 
     if (error) {
@@ -45,14 +47,14 @@ export const useNotesApi = () => {
       return [];
     }
 
-    return data;
+    return data as T[];
   };
 
-  const getNoteById = async (id: number) => {
+  const getNoteById = async <T = Tables<"notes">>(id: number, selectQuery = "*") => {
     if (!user.value) return null;
 
     loading.value = true;
-    const { data, error } = await client.from("notes").select("*").eq("id", id).single();
+    const { data, error } = await client.from("notes").select(selectQuery).eq("id", id).single<T>();
     loading.value = false;
 
     if (error || !data) {
@@ -65,13 +67,13 @@ export const useNotesApi = () => {
     return data;
   };
 
-  const createNoteFromDay = async (noteDayId: number, noteData: Partial<CreatableNoteData>) => {
+  const createNoteFromProject = async (projectId: number, noteData?: Partial<CreatableNoteData>) => {
     if (!user.value) return null;
 
     loading.value = true;
     const { data, error } = await client
       .from("notes")
-      .insert({ ...noteData, user_id: user.value.id, day_id: noteDayId })
+      .insert({ ...(noteData || {}), user_id: user.value.id, project_id: projectId })
       .select("*")
       .single();
     loading.value = false;
@@ -86,13 +88,13 @@ export const useNotesApi = () => {
     return data;
   };
 
-  const createNoteFromNote = async (noteParentId: number, noteData: Partial<CreatableNoteData>) => {
+  const createNoteFromNote = async (noteParentId: number, noteData?: Partial<CreatableNoteData>) => {
     if (!user.value) return null;
 
     loading.value = true;
     const { data, error } = await client
       .from("notes")
-      .insert({ ...noteData, user_id: user.value.id, parent_note_id: noteParentId })
+      .insert({ ...(noteData || {}), user_id: user.value.id, parent_note_id: noteParentId })
       .select("*")
       .single();
     loading.value = false;
@@ -191,16 +193,16 @@ export const useNotesApi = () => {
   //   };
 
   return {
-    getNotesOfDay,
+    getNotesOfProject,
     getNotesOfParent,
     getNoteById,
-    createNoteFromDay,
+    createNoteFromProject,
     createNoteFromNote,
     loadAllNoteParents,
     updateNote,
     deleteNote,
-    loading: readonly(loading),
-
+    getClient,
     updateNotesOrder,
+    loading: readonly(loading),
   };
 };

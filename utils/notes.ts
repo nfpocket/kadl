@@ -1,15 +1,5 @@
-import type { Enums, Tables } from "~/types/supabase";
 import { type DropdownItem } from "#ui/types/dropdown";
-
-export enum AddPanelsNote {
-  LeftMost = -1,
-  RightMost = -2,
-  CenterMost = -3,
-}
-
-export const leftMostAddNote = { id: AddPanelsNote.LeftMost } as const as Tables<"notes">;
-export const rightMostAddNote = { id: AddPanelsNote.RightMost } as const as Tables<"notes">;
-export const centerMostAddNote = { id: AddPanelsNote.CenterMost } as const as Tables<"notes">;
+import type { Enums } from "~/types/supabase";
 
 type Priority = Enums<"priority">;
 export const priorities = {

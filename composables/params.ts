@@ -12,16 +12,6 @@ export const useParams = () => {
 
     return id;
   });
-  const dayId = computed(() => {
-    const id = Number(route.params.day_id);
-
-    if (isNaN(id)) {
-      toasts.error("Invalid day id");
-      return null;
-    }
-
-    return id;
-  });
   const noteId = computed(() => {
     const id = Number(route.params.note_id);
 
@@ -35,7 +25,6 @@ export const useParams = () => {
 
   return {
     projectId,
-    dayId,
     noteId,
   };
 };

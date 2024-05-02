@@ -10,7 +10,7 @@
     <div class="flex flex-col items-center gap-6">
       <div class="text-5xl font-bold">404</div>
 
-      <div>Day not found</div>
+      <div>Note not found</div>
 
       <UButton to="/projects" icon="i-tabler-arrow-left" label="back to projects" />
     </div>
@@ -26,11 +26,11 @@ const notesApi = useNotesApi();
 
 const note = ref<Tables<"notes"> | null>(null);
 
-const loadNoteDay = async () => {
+const loadNote = async () => {
   if (noteId.value === null) return;
 
   note.value = await notesApi.getNoteById(noteId.value);
 };
 
-loadNoteDay();
+loadNote();
 </script>

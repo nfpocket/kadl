@@ -1,44 +1,39 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 h-full">
     <div class="flex items-center justify-between">
       <div class="bold text-3xl">Project {{ project?.title || projectId }}</div>
       <UButton to="/projects" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
     </div>
 
-    <div class="flex flex-wrap gap-4">
+    <div class="flex flex-wrap gap-4 overflow-auto p-1">
       <DeleteModal
-        v-if="!!requestedNoteDayToDelete"
-        :loading="noteDaysApi.loading.value"
-        title="Are you sure you want to delete this day?"
-        description="By deleting this day, all notes and subnotes will be deleted as well."
-        @cancel="requestedNoteDayToDelete = null"
-        @delete="handleDeleteNoteDay"
+        v-if="!!requestedNoteToDelete"
+        :loading="notesApi.loading.value"
+        title="Are you sure you want to delete this project?"
+        description="By deleting this project, all connected notes and subnotes will be deleted as well."
+        @cancel="requestedNoteToDelete = null"
+        @delete="handleDeleteNote"
       />
 
-      <NuxtLink
-        v-for="noteDay in noteDays"
-        :key="noteDay.id"
-        :to="`/projects/${projectId}/${noteDay.id}`"
-        @contextmenu.stop.prevent="handleContextMenu($event, noteDay)"
-      >
+      <NuxtLink v-for="note in notes" :key="note.id" :to="`/projects/${projectId}/${note.id}`" @contextmenu.stop.prevent="handleContextMenu($event, note)">
         <UCard class="card">
           <div class="flex flex-col gap-2">
-            <div class="text-sm">{{ format(new Date(noteDay.date), "dd.MM.yyyy") }}</div>
+            <div class="text-sm">Created at {{ format(new Date(note.created_at), "dd.MM.yyyy HH:mm") }}</div>
             <UInput
               placeholder="Title"
               variant="seamless"
               size="xl"
               class="w-full"
               input-class="text-xl"
-              :model-value="noteDay.title || ''"
-              @update:model-value="handleUpdateTitle($event, noteDay)"
+              :model-value="note.title || ''"
+              @update:model-value="handleUpdateTitle($event, note)"
               @click.stop.prevent
-              @keydown.enter="navigateTo(`/projects/${projectId}/${noteDay.id}`)"
+              @keydown.enter="navigateTo(`/projects/${projectId}/${note.id}`)"
             />
           </div>
         </UCard>
       </NuxtLink>
-      <NotesDayCardAddButton @add="handleCreateNewNote(AddPanelsNote.RightMost)" />
+      <NotesAddButton @add="handleCreateNewNote" />
     </div>
   </div>
 </template>
@@ -48,7 +43,6 @@ import { add, format, sub } from "date-fns";
 import type { MenuItem } from "~/composables/contextmenu";
 import { useToasts } from "~/composables/toasts";
 import type { Tables } from "~/types/supabase";
-import { AddPanelsNote } from "~/utils/notes";
 
 useHead({
   title: "Notes",
@@ -57,10 +51,10 @@ useHead({
 const { projectId } = useParams();
 
 const toasts = useToasts();
-const noteDaysApi = useNoteDaysApi();
+const notesApi = useNotesApi();
 const projectsApi = useProjectsApi();
 
-const noteDays = ref<Tables<"note_days">[]>([]);
+const notes = ref<Tables<"notes">[]>([]);
 const project = ref<Tables<"projects"> | null>(null);
 
 const loadProjectData = async () => {
@@ -69,69 +63,59 @@ const loadProjectData = async () => {
   project.value = await projectsApi.getProjectById(projectId.value);
 };
 
-const loadNoteDays = async () => {
+const loadNotes = async () => {
   if (projectId.value === null) return;
 
-  noteDays.value = await noteDaysApi.getNoteDaysByProjectId(projectId.value);
+  notes.value = await notesApi.getNotesOfProject(projectId.value);
 };
 
-const handleCreateNewNote = async (insertAt: AddPanelsNote) => {
+const handleCreateNewNote = async () => {
   if (projectId.value === null) return;
 
-  const newNoteDate =
-    insertAt === AddPanelsNote.CenterMost || !noteDays.value.length
-      ? new Date()
-      : insertAt === AddPanelsNote.LeftMost
-      ? sub(new Date(noteDays.value[0].date), { days: 1 })
-      : add(new Date(noteDays.value[noteDays.value.length - 1].date), { days: 1 });
+  const newNote = await notesApi.createNoteFromProject(projectId.value);
 
-  const newNoteDay = await noteDaysApi.createNoteDay({
-    date: newNoteDate.toISOString(),
-    project_id: projectId.value,
-  });
+  if (!newNote) return;
 
-  if (!newNoteDay) return;
+  toasts.success("Note created successfully");
 
-  toasts.success("Note day created successfully");
-
-  navigateTo(`/projects/${projectId.value}/${newNoteDay.id}`);
+  navigateTo(`/projects/${projectId.value}/${newNote.id}`);
 };
 
-const handleUpdateTitle = throttle(async (value: string, noteDay: Tables<"note_days">) => {
-  noteDaysApi.updateNoteDay(noteDay.id, {
+const handleUpdateTitle = throttle(async (value: string, note: Tables<"notes">) => {
+  notesApi.updateNote(note.id, {
     title: value,
   });
 });
 
-const requestedNoteDayToDelete = ref<Tables<"note_days"> | null>(null);
-const requestDelete = (noteDay: Tables<"note_days">) => {
-  requestedNoteDayToDelete.value = noteDay;
+const requestedNoteToDelete = ref<Tables<"notes"> | null>(null);
+const requestDelete = (note: Tables<"notes">) => {
+  requestedNoteToDelete.value = note;
 };
-const handleDeleteNoteDay = async () => {
-  if (!requestedNoteDayToDelete.value) return;
+const handleDeleteNote = async () => {
+  if (!requestedNoteToDelete.value) return;
 
-  const deleted = await noteDaysApi.deleteNoteDay(requestedNoteDayToDelete.value.id);
+  const deleted = await notesApi.deleteNote(requestedNoteToDelete.value.id);
 
   if (!deleted) {
-    requestedNoteDayToDelete.value = null;
+    requestedNoteToDelete.value = null;
     return;
   }
 
-  noteDays.value = noteDays.value.filter((n) => n.id !== requestedNoteDayToDelete.value!.id);
-  toasts.success("Note day deleted successfully");
+  notes.value = notes.value.filter((n) => n.id !== requestedNoteToDelete.value!.id);
+  toasts.success("Note deleted successfully");
 
-  requestedNoteDayToDelete.value = null;
+  requestedNoteToDelete.value = null;
 };
 
 const contextMenu = useContextMenu();
 
-const handleContextMenu = (event: MouseEvent, noteDay: Tables<"note_days">) => {
+const handleContextMenu = (event: MouseEvent, note: Tables<"notes">) => {
   const menuItems: MenuItem[] = [
     {
       type: "link",
       label: "View",
       icon: "i-tabler-eye",
-      to: `/projects/${projectId.value}/${noteDay.id}`,
+      to: `/projects/${projectId.value}/${note.id}`,
     },
     {
       type: "divider",
@@ -139,7 +123,7 @@ const handleContextMenu = (event: MouseEvent, noteDay: Tables<"note_days">) => {
     {
       type: "action",
       label: "Delete",
-      action: () => requestDelete(noteDay),
+      action: () => requestDelete(note),
       icon: "i-tabler-trash",
     },
   ];
@@ -147,6 +131,6 @@ const handleContextMenu = (event: MouseEvent, noteDay: Tables<"note_days">) => {
   contextMenu.show(event, menuItems);
 };
 
-loadNoteDays();
+loadNotes();
 loadProjectData();
 </script>

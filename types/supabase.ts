@@ -9,107 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      note_days: {
+      notes: {
         Row: {
           completed: boolean
           created_at: string
-          date: string
-          description: string | null
-          id: number
-          project_id: number
-          title: string | null
-          user_id: string | null
-        }
-        Insert: {
-          completed?: boolean
-          created_at?: string
-          date: string
-          description?: string | null
-          id?: number
-          project_id: number
-          title?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          completed?: boolean
-          created_at?: string
-          date?: string
-          description?: string | null
-          id?: number
-          project_id?: number
-          title?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_days_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "note_days_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notes: {
-        Row: {
-          checked: boolean
-          created_at: string
-          date: string | null
-          day_id: number | null
+          deadline_at: string | null
           description: string | null
           id: number
           order: number | null
           parent_note_id: number | null
           priority: Database["public"]["Enums"]["priority"]
+          project_id: number | null
           title: string | null
           user_id: string
         }
         Insert: {
-          checked?: boolean
+          completed?: boolean
           created_at?: string
-          date?: string | null
-          day_id?: number | null
+          deadline_at?: string | null
           description?: string | null
           id?: number
           order?: number | null
           parent_note_id?: number | null
           priority?: Database["public"]["Enums"]["priority"]
+          project_id?: number | null
           title?: string | null
           user_id: string
         }
         Update: {
-          checked?: boolean
+          completed?: boolean
           created_at?: string
-          date?: string | null
-          day_id?: number | null
+          deadline_at?: string | null
           description?: string | null
           id?: number
           order?: number | null
           parent_note_id?: number | null
           priority?: Database["public"]["Enums"]["priority"]
+          project_id?: number | null
           title?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "notes_day_id_fkey"
-            columns: ["day_id"]
-            isOneToOne: false
-            referencedRelation: "note_days"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "notes_parent_note_id_fkey"
             columns: ["parent_note_id"]
             isOneToOne: false
             referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -172,7 +124,7 @@ export type Database = {
           id: number
           parent_note_id: number
           title: string
-          day_id: number
+          project_id: number
         }[]
       }
       update_note_orders: {

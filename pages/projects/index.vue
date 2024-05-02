@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 h-full">
     <div class="bold text-3xl">Projects</div>
-    <div class="flex flex-wrap gap-4">
+    <div class="flex flex-wrap gap-4 p-1">
       <DeleteModal
         v-if="!!requestedProjectToDelete"
         :loading="projectsApi.loading.value"
         title="Are you sure you want to delete this project?"
-        description="By deleting this day, all notes and subnotes will be deleted as well."
+        description="By deleting this project, all connected notes and subnotes will be deleted as well."
         @cancel="requestedProjectToDelete = null"
         @delete="handleDeleteProject"
       />
@@ -28,7 +28,7 @@
           </div>
         </UCard>
       </NuxtLink>
-      <NotesDayCardAddButton @add="handleCreateNewProject()" />
+      <NotesAddButton @add="handleCreateNewProject()" />
     </div>
   </div>
 </template>

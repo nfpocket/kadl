@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <LayoutTopBar />
-    <div class="h-full flex-1 overflow-hidden p-4">
+    <div class="h-full flex-1 overflow-hidden p-4 flex flex-col">
       <slot></slot>
     </div>
   </div>
