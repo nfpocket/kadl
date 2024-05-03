@@ -27,7 +27,9 @@
               @cancel="showDeleteModal = false"
               @delete="handleDelete"
             />
-            <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+            <UTooltip text="Delete note">
+              <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+            </UTooltip>
           </div>
         </div>
       </div>
@@ -52,16 +54,16 @@
           placeholder="Describe the note"
           variant="seamless"
           class="w-full"
-          :rows="8"
+          :rows="4"
           :autoresize="true"
           v-model="description"
           @update:model-value="handleUpdateDescription"
         />
       </label>
 
-      <div class="flex flex-col gap-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs px-6">Subnotes</span>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between px-6">
+          <span>Subnotes</span>
 
           <NotesNoteCardSubNoteFilterPopover v-model="userSettings.filterOptions" />
         </div>
@@ -71,20 +73,52 @@
             <NotesNoteCardSubNoteSkeleton v-for="i in 5" :key="i" />
           </div>
 
-          <!-- TODO: User new filterOptions in userSettings -->
-          <VueDraggable v-model="visibleSubnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
+          <div v-if="!loadingSubNotes && !openSubnotes.length" class="px-6">
+            <div class="text-sm opacity-50 italic">No open subnotes</div>
+          </div>
+
+          <VueDraggable
+            :disabled="userSettings.filterOptions.sortBy !== 'none'"
+            key="id"
+            :animation="150"
+            handle=".handle"
+            v-model="filteredAndSortedSubnotes"
+            @update="handleNotesOrder"
+          >
             <NotesNoteCardSubNote
-              v-for="subnote in visibleSubnotes"
+              v-for="subnote in openSubnotes"
               :key="subnote.id"
               :note="subnote"
               @deleted="handleRemoveSubnote(subnote)"
               @add-after="handleAddNewAfter(subnote)"
+              :can-drag="userSettings.filterOptions.sortBy === 'none'"
             />
           </VueDraggable>
         </div>
 
         <div class="px-6">
           <UButton label="Add note" icon="i-tabler-plus" :block="false" color="gray" variant="solid" @click="handleAddNote" />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between px-6">
+          <span>Completed subnotes</span>
+        </div>
+
+        <div class="flex flex-col">
+          <div v-if="loadingSubNotes && !subnotes.length">
+            <NotesNoteCardSubNoteSkeleton v-for="i in 5" :key="i" />
+          </div>
+
+          <NotesNoteCardSubNote
+            v-for="completedSubnote in completedSubnotes"
+            :key="completedSubnote.id"
+            :note="completedSubnote"
+            @deleted="handleRemoveSubnote(completedSubnote)"
+            @add-after="handleAddNewAfter(completedSubnote)"
+            :can-drag="false"
+          />
         </div>
       </div>
     </div>
@@ -111,12 +145,45 @@ const notesApi = useNotesApi();
 const subnotes = ref<Tables<"notes">[]>([]);
 const loadingSubNotes = ref(false);
 
-const visibleSubnotes = computed(() => {
-  return subnotes.value.filter((note) => {
-    if (userSettings.value.filterOptions.hideCompleted && note.completed) return false;
-    return true;
+const filteredAndSortedSubnotes = ref<Tables<"notes">[]>([]);
+const openSubnotes = computed(() => filteredAndSortedSubnotes.value.filter((note) => !note.completed));
+const completedSubnotes = computed(() => filteredAndSortedSubnotes.value.filter((note) => note.completed));
+
+const filterAndSortSubnotes = () => {
+  const sortBy = userSettings.value.filterOptions.sortBy;
+  const sortOrder = userSettings.value.filterOptions.sortOrder;
+
+  if (sortBy === "none") return subnotes.value;
+
+  const handleSortByPriority = (a: Tables<"notes">, b: Tables<"notes">) => {
+    const aPriority = getPriotiryNumber(a.priority);
+    const bPriority = getPriotiryNumber(b.priority);
+
+    return sortOrder === "asc" ? aPriority - bPriority : bPriority - aPriority;
+  };
+
+  return subnotes.value.toSorted((a, b) => {
+    if (sortBy === "priority") {
+      return handleSortByPriority(a, b);
+    }
+
+    return 0;
   });
-});
+};
+
+const handleUpdateFilteredAndSortedSubnotes = () => {
+  filteredAndSortedSubnotes.value = filterAndSortSubnotes();
+};
+
+watch(
+  () => userSettings.value.filterOptions,
+  () => {
+    handleUpdateFilteredAndSortedSubnotes();
+  },
+  {
+    deep: true,
+  }
+);
 
 const title = ref(props.note.title ?? "");
 const description = ref(props.note.description ?? "");
@@ -185,16 +252,19 @@ const handleAddNote = async () => {
   });
   if (!newSubnote) return;
   subnotes.value.push(newSubnote);
+  handleUpdateFilteredAndSortedSubnotes();
 };
 
 const loadSubNotes = async () => {
   loadingSubNotes.value = true;
   subnotes.value = await notesApi.getNotesOfParent(props.note.id);
+  handleUpdateFilteredAndSortedSubnotes();
   loadingSubNotes.value = false;
 };
 
 const handleRemoveSubnote = (subnote: Tables<"notes">) => {
   subnotes.value = subnotes.value.filter((note) => note.id !== subnote.id);
+  handleUpdateFilteredAndSortedSubnotes();
 };
 
 const handleAddNewAfter = async (subnote: Tables<"notes">) => {
@@ -203,6 +273,7 @@ const handleAddNewAfter = async (subnote: Tables<"notes">) => {
   if (!newSubnote) return;
 
   subnotes.value.splice(index + 1, 0, newSubnote);
+  handleUpdateFilteredAndSortedSubnotes();
 
   const notesToUpdate = subnotes.value.slice(index + 1);
   const noteIds = notesToUpdate.map((note) => note.id);
@@ -220,7 +291,7 @@ const handleNotesOrder = async (event: SortableEvent) => {
   const correctedFromIndex = Math.min(from, to);
   const correctedToIndex = Math.max(from, to) + 1;
 
-  const notesToUpdate = subnotes.value.slice(correctedFromIndex, correctedToIndex);
+  const notesToUpdate = filteredAndSortedSubnotes.value.slice(correctedFromIndex, correctedToIndex);
 
   const noteIds = notesToUpdate.map((note) => note.id);
   const noteOrders = notesToUpdate.map((_note, index) => correctedFromIndex + index);

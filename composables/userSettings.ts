@@ -2,25 +2,21 @@ import type { WatchStopHandle } from "vue";
 import type { Database } from "~/types/supabase";
 
 export type UserNotesFilterOptions = {
-  hideCompleted: boolean;
-  groupByPriority: boolean;
-  sortBy: "none" | "created_at" | "priority" | "title";
+  sortBy: "none" | "priority";
   sortOrder: "asc" | "desc";
 };
 
 export const userNotesSortOptions = [
   { label: "None", value: "none" },
-  { label: "Created at", value: "created_at" },
-  { label: "Priority", value: "priority" },
-  { label: "Title", value: "title" },
+  { label: "priority", value: "priority" },
 ] satisfies {
   label: string;
   value: UserNotesFilterOptions["sortBy"];
 }[];
 
 export const UserNotesSortOrderOptions = [
-  { label: "Ascending", value: "asc" },
-  { label: "Descending", value: "desc" },
+  { label: "ascending", value: "asc" },
+  { label: "descending", value: "desc" },
 ] satisfies {
   label: string;
   value: UserNotesFilterOptions["sortOrder"];
@@ -31,8 +27,6 @@ type UserSettings = {
 };
 
 const initialFilterOptions: UserNotesFilterOptions = {
-  hideCompleted: false,
-  groupByPriority: false,
   sortBy: "none",
   sortOrder: "asc",
 };

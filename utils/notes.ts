@@ -10,6 +10,11 @@ export const priorities = {
   "above all": "Above All",
 } as const satisfies Record<Priority, string>;
 
+export const getPriorityLabel = (priority: Priority) => priorities[priority];
+export const getPriotiryNumber = (priority: Priority) => {
+  return Object.keys(priorities).indexOf(priority);
+};
+
 export const getPriorityIconClass = (priority: Priority) => {
   switch (priority) {
     case "none":

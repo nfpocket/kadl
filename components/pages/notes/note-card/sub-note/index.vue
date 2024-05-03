@@ -1,9 +1,10 @@
 <template>
   <div
     class="flex items-center group gap-2 hover:bg-gray-500/10 focus-within:!bg-cornflower-blue-500/20 last-of-type:border-b-0 border-b-[1px] border-y-gray-500/25"
+    :class="priorityClass"
     @contextmenu.prevent.stop="onContextMenu"
-    @dblclick="navigateTo(getNextItemRoute(note.id))"
   >
+    <!-- @dblclick="navigateTo(getNextItemRoute(note.id))" -->
     <DeleteModal
       v-if="showDeleteModal"
       :loading="notesApi.loading.value"
@@ -12,7 +13,7 @@
       @cancel="showDeleteModal = false"
       @delete="handleDelete"
     />
-    <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 group-hover:opacity-50 cursor-grab handle" />
+    <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 text-black dark:text-white handle" :class="canDrag ? 'group-hover:opacity-50 cursor-grab' : ''" />
     <UCheckbox :model-value="note.completed" @update:model-value="handleUpdateCompleted" />
     <UInput
       :class="note.completed ? 'line-through opacity-35' : ''"
@@ -27,10 +28,14 @@
     />
 
     <div class="flex items-center">
-      <UDropdown :items="[priorityOptions.map((option) => ({ ...option, click: () => handleUpdatePriority(option) }))]" :popper="{ arrow: true }">
-        <UButton icon="i-tabler-exclamation-mark" :class="getPriorityIconClass(note.priority)" size="sm" color="gray" variant="ghost" square />
-      </UDropdown>
-      <UButton :to="getNextItemRoute(note.id)" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+      <UTooltip :text="`Priority ${getPriorityLabel(note.priority)}`">
+        <UDropdown :items="[priorityOptions.map((option) => ({ ...option, click: () => handleUpdatePriority(option) }))]" :popper="{ arrow: true }">
+          <UButton icon="i-tabler-exclamation-mark" :class="getPriorityIconClass(note.priority)" size="sm" color="gray" variant="ghost" square />
+        </UDropdown>
+      </UTooltip>
+      <UTooltip text="Go to note">
+        <UButton :to="getNextItemRoute(note.id)" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+      </UTooltip>
     </div>
   </div>
 </template>
@@ -41,6 +46,7 @@ import type { Tables } from "~/types/supabase";
 
 const props = defineProps<{
   note: Tables<"notes">;
+  canDrag: boolean;
 }>();
 
 const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void }>();
@@ -77,6 +83,15 @@ const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {
 const handleEnter = () => {
   emit("addAfter");
 };
+
+const priorityClass = computed(() => {
+  return {
+    "bg-red-700/25 hover:bg-red-700/30 text-red-700 animate-pulse": props.note.priority === "above all",
+    "bg-red-500/25 hover:bg-red-500/30 text-red-500": props.note.priority === "high",
+    "bg-yellow-500/25 hover:bg-yellow-500/30 text-yellow-500": props.note.priority === "middle",
+    "bg-green-500/25 hover:bg-green-500/30 text-green-500": props.note.priority === "low",
+  };
+});
 
 const getAllSubnoteElements = () => Array.from(document.getElementsByClassName("subnote")) as HTMLInputElement[];
 const getSubnoteIndex = (subnote: HTMLInputElement) => getAllSubnoteElements().indexOf(subnote);
@@ -172,6 +187,17 @@ const onContextMenu = (event: MouseEvent) => {
       label: "View",
       icon: "i-tabler-eye",
       to: getNextItemRoute(props.note.id),
+    },
+    {
+      type: "options",
+      label: "Priority",
+      icon: "i-tabler-exclamation-mark",
+      items: priorityOptions.map((option) => ({
+        icon: "i-tabler-exclamation-mark",
+        iconClass: getPriorityIconClass(option.value),
+        label: option.label,
+        click: () => handleUpdatePriority(option),
+      })),
     },
     {
       type: "divider",
