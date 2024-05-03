@@ -1,11 +1,17 @@
 <template>
   <div class="flex flex-col gap-4 h-full">
     <div class="flex items-center justify-between">
-      <div class="bold text-3xl">Project {{ project?.title || projectId }}</div>
+      <div class="flex-1 flex items-center gap-2">
+        <div class="bold text-3xl flex items-center gap-2">
+          <USkeleton v-if="projectsApi.loading.value" class="w-[300px] h-6" />
+          <span v-else>Project {{ project?.title || projectId }}</span>
+        </div>
+        <NotesAddButton @add="handleCreateNewNote" />
+      </div>
       <UButton to="/projects" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
     </div>
 
-    <div class="flex flex-wrap gap-4 overflow-auto p-1">
+    <div class="flex flex-col gap-4 p-1 overflow-auto">
       <DeleteModal
         v-if="!!requestedNoteToDelete"
         :loading="notesApi.loading.value"
@@ -17,34 +23,31 @@
 
       <NuxtLink v-for="note in notes" :key="note.id" :to="`/projects/${projectId}/${note.id}`" @contextmenu.stop.prevent="handleContextMenu($event, note)">
         <UCard class="card">
-          <div class="flex flex-col gap-2">
-            <div class="text-sm">Created at {{ format(new Date(note.created_at), "dd.MM.yyyy HH:mm") }}</div>
-            <div>
+          <div>
+            <div class="text-xs">Created at {{ format(new Date(note.created_at), "dd.MM.yyyy HH:mm") }}</div>
+
+            <div class="line-clamp-2">
               <span v-if="note.title" class="text-xl">{{ note.title }}</span>
-              <span v-else class="text-xl italic">Title</span>
+              <span v-else class="text-xl italic opacity-50">Title</span>
             </div>
 
-            <!-- <UInput
-              placeholder="Title"
-              variant="seamless"
-              size="xl"
-              class="w-full"
-              input-class="text-xl"
-              :model-value="note.title || ''"
-              @update:model-value="handleUpdateTitle($event, note)"
-              @click.stop.prevent
-              @keydown.enter="navigateTo(`/projects/${projectId}/${note.id}`)"
-            /> -->
+            <div class="line-clamp-3">
+              <span v-if="note.description" class="">{{ note.description }}</span>
+              <span v-else class="italic opacity-50">Description</span>
+            </div>
           </div>
         </UCard>
       </NuxtLink>
-      <NotesAddButton @add="handleCreateNewNote" />
+
+      <template v-if="!notes.length && notesApi.loading.value">
+        <NotesSkeleton v-for="i in 10" :key="i" />
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { add, format, sub } from "date-fns";
+import { format } from "date-fns";
 import type { MenuItem } from "~/composables/contextmenu";
 import { useToasts } from "~/composables/toasts";
 import type { Tables } from "~/types/supabase";
@@ -85,12 +88,6 @@ const handleCreateNewNote = async () => {
 
   navigateTo(`/projects/${projectId.value}/${newNote.id}`);
 };
-
-const handleUpdateTitle = throttle(async (value: string, note: Tables<"notes">) => {
-  notesApi.updateNote(note.id, {
-    title: value,
-  });
-});
 
 const requestedNoteToDelete = ref<Tables<"notes"> | null>(null);
 const requestDelete = (note: Tables<"notes">) => {
