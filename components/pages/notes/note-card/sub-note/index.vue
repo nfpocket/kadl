@@ -16,6 +16,7 @@
     <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 text-black dark:text-white handle" :class="canDrag ? 'group-hover:opacity-50 cursor-grab' : ''" />
     <UCheckbox :model-value="note.completed" @update:model-value="handleUpdateCompleted" />
     <UInput
+      ref="inputRef"
       :class="note.completed ? 'line-through opacity-35' : ''"
       placeholder="Title"
       variant="none"
@@ -43,6 +44,7 @@
 <script setup lang="ts">
 import type { MenuItem } from "~/composables/contextmenu";
 import type { Tables } from "~/types/supabase";
+import UInput from "#ui/components/forms/Input.vue";
 
 const props = defineProps<{
   note: Tables<"notes">;
@@ -50,6 +52,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void; (event: "priorityUpdated"): void }>();
+
+const inputRef = ref<InstanceType<typeof UInput> | null>(null);
 
 const { projectId } = useParams();
 const getNextItemRoute = (noteId: number) => {
@@ -223,4 +227,17 @@ const handleDelete = () => {
   showDeleteModal.value = false;
   emit("deleted");
 };
+
+const nuxtApp = useNuxtApp();
+onMounted(() => {
+  nuxtApp.$bus.$on("triggerFocusSubnoteById", (noteId) => {
+    if (props.note.id !== noteId || !inputRef.value) return;
+    if (!inputRef.value.input) return;
+
+    inputRef.value.input.focus();
+  });
+});
+onBeforeUnmount(() => {
+  nuxtApp.$bus.$off("triggerFocusSubnoteById");
+});
 </script>

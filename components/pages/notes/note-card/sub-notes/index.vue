@@ -128,6 +128,10 @@ const handleAddNote = async () => {
   if (!newSubnote) return;
   subnotes.value.push(newSubnote);
   handleUpdateFilteredAndSortedSubnotes();
+
+  nextTick(() => {
+    useNuxtApp().$bus.$emit("triggerFocusSubnoteById", newSubnote.id);
+  });
 };
 
 const loadSubNotes = async () => {
@@ -149,6 +153,10 @@ const handleAddNewAfter = async (subnote: Tables<"notes">) => {
 
   subnotes.value.splice(index + 1, 0, newSubnote);
   handleUpdateFilteredAndSortedSubnotes();
+
+  nextTick(() => {
+    useNuxtApp().$bus.$emit("triggerFocusSubnoteById", newSubnote.id);
+  });
 
   const notesToUpdate = subnotes.value.slice(index + 1);
   const noteIds = notesToUpdate.map((note) => note.id);
