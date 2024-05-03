@@ -20,7 +20,8 @@
         </div>
 
         <div class="flex items-center flex-1 overflow-auto">
-          <UBreadcrumb :links="breadcrumbs" />
+          <BreadcrumbsSkeleton v-if="breadcrumbsLoading" />
+          <UBreadcrumb v-else :links="breadcrumbs" />
         </div>
 
         <div class="flex items-center gap-2">
@@ -152,38 +153,45 @@ const handleUpdateDescription = throttle(async (value: string) => {
 });
 
 const breadcrumbs = ref<BreakdcrumbLink[]>([]);
+const breadcrumbsLoading = ref(false);
 const loadBreadcrumbs = async () => {
-  const parents = await notesApi.loadAllNoteParents(props.note.id);
-  if (!parents) return;
+  const setBreadcrumbs = async () => {
+    const parents = await notesApi.loadAllNoteParents(props.note.id);
+    if (!parents) return;
 
-  const projectParent = parents.find((parent) => parent.project_id !== null);
+    const projectParent = parents.find((parent) => parent.project_id !== null);
 
-  if (!projectParent) return;
+    if (!projectParent) return;
 
-  const client = useNotesApi().getClient();
-  const rawQuery = "id, title, projects (id, title)";
-  const query = client.select(rawQuery);
+    const client = useNotesApi().getClient();
+    const rawQuery = "id, title, projects (id, title)";
+    const query = client.select(rawQuery);
 
-  type NoteWithProject = QueryData<typeof query>[number];
+    type NoteWithProject = QueryData<typeof query>[number];
 
-  const note = await useNotesApi().getNoteById<NoteWithProject>(projectParent.id, rawQuery);
-  const project = note?.projects;
+    const note = await useNotesApi().getNoteById<NoteWithProject>(projectParent.id, rawQuery);
+    const project = note?.projects;
 
-  if (!project) return;
+    if (!project) return;
 
-  breadcrumbs.value = parents.reverse().map((parent) => ({
-    id: parent.id,
-    label: parent.id === props.note.id ? "Current" : parent.title,
-    to: `/projects/${project.id}/${parent.id}`,
-    icon: "i-tabler-note",
-  }));
+    breadcrumbs.value = parents.reverse().map((parent) => ({
+      id: parent.id,
+      label: parent.id === props.note.id ? "Current" : parent.title,
+      to: `/projects/${project.id}/${parent.id}`,
+      icon: "i-tabler-note",
+    }));
 
-  breadcrumbs.value.unshift({
-    id: project.id,
-    label: project.title || `Project ${project.id}`,
-    to: `/projects/${project.id}`,
-    icon: "i-tabler-stack",
-  });
+    breadcrumbs.value.unshift({
+      id: project.id,
+      label: project.title || `Project ${project.id}`,
+      to: `/projects/${project.id}`,
+      icon: "i-tabler-stack",
+    });
+  };
+
+  breadcrumbsLoading.value = true;
+  await setBreadcrumbs();
+  breadcrumbsLoading.value = false;
 };
 
 loadBreadcrumbs();

@@ -1,7 +1,10 @@
 <template>
   <div class="flex flex-col gap-4 h-full">
-    <div class="bold text-3xl">Projects</div>
-    <div class="flex flex-wrap gap-4 p-1">
+    <div class="flex items-center gap-2">
+      <div class="bold text-3xl">Projects</div>
+      <NotesAddButton @add="handleCreateNewProject()" />
+    </div>
+    <div class="flex flex-col gap-4 p-1 overflow-auto">
       <DeleteModal
         v-if="!!requestedProjectToDelete"
         :loading="projectsApi.loading.value"
@@ -13,26 +16,23 @@
 
       <NuxtLink v-for="project in projects" :key="project.id" :to="`/projects/${project.id}`" @contextmenu.stop.prevent="handleContextMenu($event, project)">
         <UCard class="card">
-          <div class="flex flex-col gap-2">
-            <div>
+          <div>
+            <div class="line-clamp-2">
               <span v-if="project.title" class="text-xl">{{ project.title }}</span>
-              <span v-else class="text-xl italic">Title</span>
+              <span v-else class="text-xl italic opacity-50">Title</span>
             </div>
-            <!-- <UInput
-              placeholder="Title"
-              variant="seamless"
-              size="xl"
-              class="w-full"
-              input-class="text-xl"
-              :model-value="project.title || ''"
-              @update:model-value="handleUpdateTitle($event, project)"
-              @click.stop.prevent
-              @keydown.enter="navigateTo(`/projects/${project.id}`)"
-            /> -->
+
+            <div class="line-clamp-3">
+              <span v-if="project.description" class="">{{ project.description }}</span>
+              <span v-else class="italic opacity-50">Description</span>
+            </div>
           </div>
         </UCard>
       </NuxtLink>
-      <NotesAddButton @add="handleCreateNewProject()" />
+
+      <template v-if="!projects.length && projectsApi.loading.value">
+        <NotesSkeleton v-for="i in 10" :key="i" />
+      </template>
     </div>
   </div>
 </template>
@@ -64,12 +64,6 @@ const handleCreateNewProject = async () => {
 
   navigateTo(`/projects/${newProject.id}`);
 };
-
-const handleUpdateTitle = throttle(async (value: string, project: Tables<"projects">) => {
-  projectsApi.updateProject(project.id, {
-    title: value,
-  });
-});
 
 const requestedProjectToDelete = ref<Tables<"projects"> | null>(null);
 const requestDelete = (project: Tables<"projects">) => {
