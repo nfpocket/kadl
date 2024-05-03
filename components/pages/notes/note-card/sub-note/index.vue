@@ -1,9 +1,10 @@
 <template>
   <div
     class="flex items-center group gap-2 hover:bg-gray-500/10 focus-within:!bg-cornflower-blue-500/20 last-of-type:border-b-0 border-b-[1px] border-y-gray-500/25"
+    :class="getPriorityBackgroundClass(note.priority, true)"
     @contextmenu.prevent.stop="onContextMenu"
-    @dblclick="navigateTo(getNextItemRoute(note.id))"
   >
+    <!-- @dblclick="navigateTo(getNextItemRoute(note.id))" -->
     <DeleteModal
       v-if="showDeleteModal"
       :loading="notesApi.loading.value"
@@ -12,13 +13,14 @@
       @cancel="showDeleteModal = false"
       @delete="handleDelete"
     />
-    <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 group-hover:opacity-50 cursor-grab handle" />
+    <UIcon name="i-heroicons-bars-4" class="ml-1 opacity-0 text-black dark:text-white handle" :class="canDrag ? 'group-hover:opacity-50 cursor-grab' : ''" />
     <UCheckbox :model-value="note.completed" @update:model-value="handleUpdateCompleted" />
     <UInput
+      ref="inputRef"
       :class="note.completed ? 'line-through opacity-35' : ''"
       placeholder="Title"
       variant="none"
-      autofocus
+      :autofocus="false"
       class="w-full"
       input-class="subnote"
       :model-value="note.title || ''"
@@ -27,10 +29,11 @@
     />
 
     <div class="flex items-center">
-      <UDropdown :items="[priorityOptions.map((option) => ({ ...option, click: () => handleUpdatePriority(option) }))]" :popper="{ arrow: true }">
-        <UButton icon="i-tabler-exclamation-mark" :class="getPriorityIconClass(note.priority)" size="sm" color="gray" variant="ghost" square />
-      </UDropdown>
-      <UButton :to="getNextItemRoute(note.id)" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+      <NotesPriorityButton :note="note" @priority-updated="emit('priorityUpdated')" />
+
+      <UTooltip text="Go to note">
+        <UButton :to="getNextItemRoute(note.id)" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
+      </UTooltip>
     </div>
   </div>
 </template>
@@ -38,12 +41,16 @@
 <script setup lang="ts">
 import type { MenuItem } from "~/composables/contextmenu";
 import type { Tables } from "~/types/supabase";
+import UInput from "#ui/components/forms/Input.vue";
 
 const props = defineProps<{
   note: Tables<"notes">;
+  canDrag: boolean;
 }>();
 
-const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void }>();
+const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void; (event: "priorityUpdated"): void }>();
+
+const inputRef = ref<InstanceType<typeof UInput> | null>(null);
 
 const { projectId } = useParams();
 const getNextItemRoute = (noteId: number) => {
@@ -67,11 +74,6 @@ const handleUpdateCompleted = async (completed: boolean) => {
   if (!updatedNote) {
     props.note.completed = prevCompleted;
   }
-};
-
-const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {
-  notesApi.updateNote(props.note.id, { priority: option.value });
-  props.note.priority = option.value;
 };
 
 const handleEnter = () => {
@@ -174,6 +176,21 @@ const onContextMenu = (event: MouseEvent) => {
       to: getNextItemRoute(props.note.id),
     },
     {
+      type: "options",
+      label: "Priority",
+      icon: "i-tabler-exclamation-mark",
+      items: priorityOptions.map((option) => ({
+        icon: "i-tabler-exclamation-mark",
+        iconClass: getPriorityIconClass(option.value),
+        label: option.label,
+        click: () => {
+          notesApi.updateNote(props.note.id, { priority: option.value });
+          props.note.priority = option.value;
+          emit("priorityUpdated");
+        },
+      })),
+    },
+    {
       type: "divider",
     },
     {
@@ -196,4 +213,17 @@ const handleDelete = () => {
   showDeleteModal.value = false;
   emit("deleted");
 };
+
+const nuxtApp = useNuxtApp();
+onMounted(() => {
+  nuxtApp.$bus.$on("triggerFocusSubnoteById", (noteId) => {
+    if (props.note.id !== noteId || !inputRef.value) return;
+    if (!inputRef.value.input) return;
+
+    inputRef.value.input.focus();
+  });
+});
+onBeforeUnmount(() => {
+  nuxtApp.$bus.$off("triggerFocusSubnoteById");
+});
 </script>

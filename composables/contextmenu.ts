@@ -1,3 +1,5 @@
+import type { DropdownItem } from "#ui/types/dropdown";
+
 export type MenuItemDivider = {
   type: "divider";
 };
@@ -15,7 +17,14 @@ export type MenuItemAction = {
   action: () => void;
 };
 
-export type MenuItem = MenuItemDivider | MenuItemLink | MenuItemAction;
+export type MenuItemOptions = {
+  type: "options";
+  label: string;
+  icon?: string;
+  items: DropdownItem[];
+};
+
+export type MenuItem = MenuItemDivider | MenuItemLink | MenuItemAction | MenuItemOptions;
 
 export type MenuPosition = { x: number; y: number };
 

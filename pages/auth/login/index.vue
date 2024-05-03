@@ -48,11 +48,6 @@ const state = ref<Schema>({
   password: "",
 });
 
-async function onSubmit(event: FormSubmitEvent<Schema>) {
-  // Do something with event.data
-  console.log(event.data);
-}
-
 const handleSignIn = async () => {
   successMessage.value = "";
   errorMesssage.value = "";

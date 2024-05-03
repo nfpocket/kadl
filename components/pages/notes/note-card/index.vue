@@ -1,5 +1,11 @@
 <template>
-  <UCard :ui="{ base: 'flex flex-col', body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' } }">
+  <UCard
+    :ui="{
+      base: 'flex flex-col',
+      header: { base: `${getPriorityBackgroundClass(note.priority, false)} rounded-tl-lg rounded-tr-lg` },
+      body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' },
+    }"
+  >
     <template #header>
       <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-2">
@@ -11,11 +17,15 @@
             color="green"
             @click="handleUpdateChecked"
           />
+        </div>
 
+        <div class="flex items-center flex-1 overflow-auto">
           <UBreadcrumb :links="breadcrumbs" />
         </div>
 
         <div class="flex items-center gap-2">
+          <NotesPriorityButton :note="props.note" />
+
           <UButton :to="backRoutePath" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
 
           <div>
@@ -27,7 +37,9 @@
               @cancel="showDeleteModal = false"
               @delete="handleDelete"
             />
-            <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+            <UTooltip text="Delete note">
+              <UButton icon="i-tabler-trash" size="xs" color="gray" variant="solid" square @click="requestDelete" />
+            </UTooltip>
           </div>
         </div>
       </div>
@@ -52,43 +64,20 @@
           placeholder="Describe the note"
           variant="seamless"
           class="w-full"
-          :rows="8"
+          :rows="4"
           :autoresize="true"
           v-model="description"
           @update:model-value="handleUpdateDescription"
         />
       </label>
 
-      <div class="flex flex-col gap-4">
-        <span class="text-xs px-6">Subnotes</span>
-
-        <div class="flex flex-col">
-          <div v-if="loadingSubNotes && !subnotes.length">
-            <NotesSubNoteSkeleton v-for="i in 5" :key="i" />
-          </div>
-
-          <VueDraggable v-model="subnotes" :animation="150" handle=".handle" @update="handleNotesOrder">
-            <NotesSubNote
-              v-for="subnote in subnotes"
-              :key="subnote.id"
-              :note="subnote"
-              @deleted="handleRemoveSubnote(subnote)"
-              @add-after="handleAddNewAfter(subnote)"
-            />
-          </VueDraggable>
-        </div>
-
-        <div class="px-6">
-          <UButton label="Add note" icon="i-tabler-plus" :block="false" color="gray" variant="solid" @click="handleAddNote" />
-        </div>
-      </div>
+      <NotesNoteCardSubNotes :note="note" />
     </div>
   </UCard>
 </template>
 
 <script setup lang="ts">
 import type { QueryData } from "@supabase/supabase-js";
-import { VueDraggable, type SortableEvent } from "vue-draggable-plus";
 import type { Tables } from "~/types/supabase";
 
 type BreakdcrumbLink = { id: number; label: string; to: string; icon?: string };
@@ -100,9 +89,6 @@ const props = defineProps<{
 const { projectId } = useParams();
 
 const notesApi = useNotesApi();
-
-const subnotes = ref<Tables<"notes">[]>([]);
-const loadingSubNotes = ref(false);
 
 const title = ref(props.note.title ?? "");
 const description = ref(props.note.description ?? "");
@@ -165,55 +151,6 @@ const handleUpdateDescription = throttle(async (value: string) => {
   props.note.description = updatedNote.description;
 });
 
-const handleAddNote = async () => {
-  const newSubnote = await notesApi.createNoteFromNote(props.note.id, {
-    order: subnotes.value.length,
-  });
-  if (!newSubnote) return;
-  subnotes.value.push(newSubnote);
-};
-
-const loadSubNotes = async () => {
-  loadingSubNotes.value = true;
-  subnotes.value = await notesApi.getNotesOfParent(props.note.id);
-  loadingSubNotes.value = false;
-};
-
-const handleRemoveSubnote = (subnote: Tables<"notes">) => {
-  subnotes.value = subnotes.value.filter((note) => note.id !== subnote.id);
-};
-
-const handleAddNewAfter = async (subnote: Tables<"notes">) => {
-  const index = subnotes.value.findIndex((note) => note.id === subnote.id);
-  const newSubnote = await notesApi.createNoteFromNote(props.note.id);
-  if (!newSubnote) return;
-
-  subnotes.value.splice(index + 1, 0, newSubnote);
-
-  const notesToUpdate = subnotes.value.slice(index + 1);
-  const noteIds = notesToUpdate.map((note) => note.id);
-  const noteOrderIndexes = notesToUpdate.map((_note, i) => i + index);
-
-  notesApi.updateNotesOrder(noteIds, noteOrderIndexes);
-};
-
-const handleNotesOrder = async (event: SortableEvent) => {
-  const from = event.oldIndex;
-  const to = event.newIndex;
-
-  if (from === undefined || to === undefined) return;
-
-  const correctedFromIndex = Math.min(from, to);
-  const correctedToIndex = Math.max(from, to) + 1;
-
-  const notesToUpdate = subnotes.value.slice(correctedFromIndex, correctedToIndex);
-
-  const noteIds = notesToUpdate.map((note) => note.id);
-  const noteOrders = notesToUpdate.map((_note, index) => correctedFromIndex + index);
-
-  notesApi.updateNotesOrder(noteIds, noteOrders);
-};
-
 const breadcrumbs = ref<BreakdcrumbLink[]>([]);
 const loadBreadcrumbs = async () => {
   const parents = await notesApi.loadAllNoteParents(props.note.id);
@@ -236,7 +173,7 @@ const loadBreadcrumbs = async () => {
 
   breadcrumbs.value = parents.reverse().map((parent) => ({
     id: parent.id,
-    label: parent.title,
+    label: parent.id === props.note.id ? "Current" : parent.title,
     to: `/projects/${project.id}/${parent.id}`,
     icon: "i-tabler-note",
   }));
@@ -249,7 +186,6 @@ const loadBreadcrumbs = async () => {
   });
 };
 
-loadSubNotes();
 loadBreadcrumbs();
 
 const showDeleteModal = ref(false);
