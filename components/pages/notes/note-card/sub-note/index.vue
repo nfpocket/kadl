@@ -49,7 +49,7 @@ const props = defineProps<{
   canDrag: boolean;
 }>();
 
-const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void }>();
+const emit = defineEmits<{ (event: "addAfter"): void; (event: "deleted"): void; (event: "priorityUpdated"): void }>();
 
 const { projectId } = useParams();
 const getNextItemRoute = (noteId: number) => {
@@ -78,6 +78,7 @@ const handleUpdateCompleted = async (completed: boolean) => {
 const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {
   notesApi.updateNote(props.note.id, { priority: option.value });
   props.note.priority = option.value;
+  emit("priorityUpdated");
 };
 
 const handleEnter = () => {
@@ -86,7 +87,7 @@ const handleEnter = () => {
 
 const priorityClass = computed(() => {
   return {
-    "bg-red-700/25 hover:bg-red-700/30 text-red-700 animate-pulse": props.note.priority === "above all",
+    "bg-red-700/25 hover:bg-red-700/30 text-red-700 shadow-[inset_0_0_4px_rgb(185,28,28)]": props.note.priority === "above all",
     "bg-red-500/25 hover:bg-red-500/30 text-red-500": props.note.priority === "high",
     "bg-yellow-500/25 hover:bg-yellow-500/30 text-yellow-500": props.note.priority === "middle",
     "bg-green-500/25 hover:bg-green-500/30 text-green-500": props.note.priority === "low",
