@@ -1,5 +1,11 @@
 <template>
-  <UCard :ui="{ base: 'flex flex-col', body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' } }">
+  <UCard
+    :ui="{
+      base: 'flex flex-col',
+      header: { base: `${getPriorityBackgroundClass(note.priority, false)} rounded-tl-lg rounded-tr-lg` },
+      body: { base: 'flex-1 flex flex-col overflow-auto', padding: '!px-0 py-5' },
+    }"
+  >
     <template #header>
       <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-2">
@@ -11,11 +17,15 @@
             color="green"
             @click="handleUpdateChecked"
           />
+        </div>
 
+        <div class="flex items-center flex-1 overflow-auto">
           <UBreadcrumb :links="breadcrumbs" />
         </div>
 
         <div class="flex items-center gap-2">
+          <NotesPriorityButton :note="props.note" />
+
           <UButton :to="backRoutePath" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
 
           <div>
@@ -163,7 +173,7 @@ const loadBreadcrumbs = async () => {
 
   breadcrumbs.value = parents.reverse().map((parent) => ({
     id: parent.id,
-    label: parent.title,
+    label: parent.id === props.note.id ? "Current" : parent.title,
     to: `/projects/${project.id}/${parent.id}`,
     icon: "i-tabler-note",
   }));

@@ -1,7 +1,7 @@
 <template>
   <div
     class="flex items-center group gap-2 hover:bg-gray-500/10 focus-within:!bg-cornflower-blue-500/20 last-of-type:border-b-0 border-b-[1px] border-y-gray-500/25"
-    :class="priorityClass"
+    :class="getPriorityBackgroundClass(note.priority, true)"
     @contextmenu.prevent.stop="onContextMenu"
   >
     <!-- @dblclick="navigateTo(getNextItemRoute(note.id))" -->
@@ -29,11 +29,8 @@
     />
 
     <div class="flex items-center">
-      <UTooltip :text="`Priority ${getPriorityLabel(note.priority)}`">
-        <UDropdown :items="[priorityOptions.map((option) => ({ ...option, click: () => handleUpdatePriority(option) }))]" :popper="{ arrow: true }">
-          <UButton icon="i-tabler-exclamation-mark" :class="getPriorityIconClass(note.priority)" size="sm" color="gray" variant="ghost" square />
-        </UDropdown>
-      </UTooltip>
+      <NotesPriorityButton :note="note" @priority-updated="emit('priorityUpdated')" />
+
       <UTooltip text="Go to note">
         <UButton :to="getNextItemRoute(note.id)" icon="i-tabler-chevron-right" size="sm" color="gray" variant="ghost" square />
       </UTooltip>
@@ -79,24 +76,9 @@ const handleUpdateCompleted = async (completed: boolean) => {
   }
 };
 
-const handleUpdatePriority = (option: (typeof priorityOptions)[number]) => {
-  notesApi.updateNote(props.note.id, { priority: option.value });
-  props.note.priority = option.value;
-  emit("priorityUpdated");
-};
-
 const handleEnter = () => {
   emit("addAfter");
 };
-
-const priorityClass = computed(() => {
-  return {
-    "bg-red-700/25 hover:bg-red-700/30 text-red-700 shadow-[inset_0_0_4px_rgb(185,28,28)]": props.note.priority === "above all",
-    "bg-red-500/25 hover:bg-red-500/30 text-red-500": props.note.priority === "high",
-    "bg-yellow-500/25 hover:bg-yellow-500/30 text-yellow-500": props.note.priority === "middle",
-    "bg-green-500/25 hover:bg-green-500/30 text-green-500": props.note.priority === "low",
-  };
-});
 
 const getAllSubnoteElements = () => Array.from(document.getElementsByClassName("subnote")) as HTMLInputElement[];
 const getSubnoteIndex = (subnote: HTMLInputElement) => getAllSubnoteElements().indexOf(subnote);
@@ -201,7 +183,11 @@ const onContextMenu = (event: MouseEvent) => {
         icon: "i-tabler-exclamation-mark",
         iconClass: getPriorityIconClass(option.value),
         label: option.label,
-        click: () => handleUpdatePriority(option),
+        click: () => {
+          notesApi.updateNote(props.note.id, { priority: option.value });
+          props.note.priority = option.value;
+          emit("priorityUpdated");
+        },
       })),
     },
     {
