@@ -82,7 +82,7 @@ export const useUserSettings = () => {
     return await client.from("user_settings").update({ subnotes_filter_options: newFilterOptions }).eq("user_id", user.value.id).single();
   };
 
-  onBeforeUnmount(() => {
+  onUnmounted(() => {
     unwatchFilterOptions?.();
   });
 
