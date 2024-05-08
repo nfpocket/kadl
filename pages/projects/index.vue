@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-4 h-full">
     <div class="flex items-center justify-between gap-2">
       <div class="bold text-3xl">Projects</div>
-      <NotesAddButton @add="handleCreateNewProject()" />
+      <NotesAddButton @add="handleCreateNewProject()" tooltip="Add a new project" />
     </div>
     <div class="flex flex-col gap-4 p-1 overflow-auto">
       <DeleteModal

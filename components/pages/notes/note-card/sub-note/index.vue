@@ -163,6 +163,11 @@ const handleKeydown = (event: KeyboardEvent) => {
     return;
   }
 
+  if (event.shiftKey) {
+    return;
+  }
+
+  event.preventDefault();
   handleEnter();
 };
 

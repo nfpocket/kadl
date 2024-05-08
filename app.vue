@@ -8,3 +8,7 @@
     <ContextMenu />
   </div>
 </template>
+
+<script setup lang="ts">
+useCustomTabKey();
+</script>

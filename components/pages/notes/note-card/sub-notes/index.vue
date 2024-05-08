@@ -121,6 +121,20 @@ watch(
   }
 );
 
+const { TAB_N } = useMagicKeys({
+  passive: false,
+  onEventFired(e) {
+    if (!TAB_N.value) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+  },
+});
+
+whenever(TAB_N, () => {
+  handleAddNote();
+});
+
 const handleAddNote = async () => {
   const newSubnote = await notesApi.createNoteFromNote(props.note.id, {
     order: subnotes.value.length,

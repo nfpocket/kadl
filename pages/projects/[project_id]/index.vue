@@ -15,7 +15,7 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <NotesAddButton @add="handleCreateNewNote" />
+        <NotesAddButton @add="handleCreateNewNote" tooltip="Add a new note" />
         <UButton to="/projects" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
       </div>
     </div>
@@ -50,6 +50,12 @@
 
       <template v-if="!notes.length && notesApi.loading.value">
         <NotesSkeleton v-for="i in 10" :key="i" />
+      </template>
+
+      <template v-if="!notes.length && !notesApi.loading.value">
+        <div class="flex items-center justify-center h-32">
+          <div class="text-lg italic opacity-50">No notes found</div>
+        </div>
       </template>
     </div>
   </div>
