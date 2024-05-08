@@ -1,8 +1,8 @@
 <template>
   <div class="flex flex-col gap-4 h-full">
-    <div class="flex items-center gap-2">
+    <div class="flex items-center justify-between gap-2">
       <div class="bold text-3xl">Projects</div>
-      <NotesAddButton @add="handleCreateNewProject()" />
+      <NotesAddButton @add="handleCreateNewProject()" tooltip="Add a new project" />
     </div>
     <div class="flex flex-col gap-4 p-1 overflow-auto">
       <DeleteModal
@@ -22,10 +22,10 @@
               <span v-else class="text-xl italic opacity-50">Title</span>
             </div>
 
-            <div class="line-clamp-3">
+            <!-- <div class="line-clamp-3">
               <span v-if="project.description" class="">{{ project.description }}</span>
               <span v-else class="italic opacity-50">Description</span>
-            </div>
+            </div> -->
           </div>
         </UCard>
       </NuxtLink>

@@ -2,13 +2,22 @@
   <div class="flex flex-col gap-4 h-full">
     <div class="flex items-center justify-between">
       <div class="flex-1 flex items-center gap-2">
-        <div class="bold text-3xl flex items-center gap-2">
-          <USkeleton v-if="projectsApi.loading.value" class="w-[300px] h-6" />
-          <span v-else>Project {{ project?.title || projectId }}</span>
-        </div>
-        <NotesAddButton @add="handleCreateNewNote" />
+        <USkeleton v-if="projectsApi.loading.value && !project" class="w-[300px] h-6" />
+        <UInput
+          v-else
+          :model-value="project?.title || ''"
+          placeholder="Project title"
+          variant="seamless"
+          class="pl-2 w-full"
+          size="3xl"
+          @update:model-value="updateProjectTitle"
+        />
       </div>
-      <UButton to="/projects" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
+
+      <div class="flex items-center gap-2">
+        <NotesAddButton @add="handleCreateNewNote" tooltip="Add a new note" />
+        <UButton to="/projects" icon="i-tabler-arrow-left" label="Back" size="xs" color="gray" variant="solid" square />
+      </div>
     </div>
 
     <div class="flex flex-col gap-4 p-1 overflow-auto">
@@ -42,6 +51,12 @@
       <template v-if="!notes.length && notesApi.loading.value">
         <NotesSkeleton v-for="i in 10" :key="i" />
       </template>
+
+      <template v-if="!notes.length && !notesApi.loading.value">
+        <div class="flex items-center justify-center h-32">
+          <div class="text-lg italic opacity-50">No notes found</div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -64,6 +79,15 @@ const projectsApi = useProjectsApi();
 
 const notes = ref<Tables<"notes">[]>([]);
 const project = ref<Tables<"projects"> | null>(null);
+
+const updateProjectTitle = throttle(async (title: string) => {
+  if (projectId.value === null || !project.value) return;
+
+  project.value.title = title;
+  const updated = await projectsApi.updateProject(projectId.value, { title });
+
+  if (!updated) return;
+});
 
 const loadProjectData = async () => {
   if (projectId.value === null) return;
